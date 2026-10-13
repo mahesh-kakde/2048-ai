@@ -1,7 +1,7 @@
 const NN = (() => {
   const MODEL_URL = 'model/model.json';
-  const LS_KEY = 'localstorage://2048-nn-model';
-  const SCORE_MAX = 62144;
+  const LS_KEY = 'localstorage://2048-nn-model-v2';
+  const SCORE_MAX = 76564;
   const LEARNING_RATE = 0.0001;
   const FINE_TUNE_STEPS = 2;
 
