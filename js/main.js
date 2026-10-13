@@ -44,6 +44,8 @@ const Game = (() => {
   function do_move(direction) {
     if (game_over || input_locked) return;
 
+    if (typeof NN !== 'undefined') NN.record_state(board, score);
+
     const old_board = clone(board);
     const result = move(board, direction);
     if (!result.moved) return;
@@ -68,7 +70,10 @@ const Game = (() => {
 
     if (is_game_over(board)) {
       game_over = true;
-      setTimeout(() => UI.show_message('game over'), 300);
+      setTimeout(() => {
+        UI.show_message('game over');
+        if (typeof NN !== 'undefined') NN.on_game_over(score);
+      }, 300);
     }
 
     setTimeout(() => { input_locked = false; }, 150);
@@ -81,6 +86,7 @@ const Game = (() => {
     input_locked = false;
     ai_playing = false;
     ai_btn.textContent = 'let ai play';
+    if (typeof NN !== 'undefined') NN.reset_game();
     UI.hide_message();
     UI.update_score(0);
     UI.update_best(best);
