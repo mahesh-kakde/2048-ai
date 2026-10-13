@@ -47,7 +47,7 @@ the ai uses **expectimax search** -- a tree search algorithm for games with rand
 
 ## live demo
 
-[coming soon](#)
+[mk-2048-nn.vercel.app](https://mk-2048-nn.vercel.app)
 
 ## license
 
