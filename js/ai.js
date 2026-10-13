@@ -1,5 +1,8 @@
-const AI_DEPTH = 4;
 const PROB_THRESHOLD = 0.0001;
+
+let nodes_evaluated = 0;
+let last_move_time_ms = 0;
+let last_search_depth = 2;
 
 function heuristic_evaluate(board) {
   let empty = 0;
@@ -51,9 +54,17 @@ function heuristic_evaluate(board) {
   return (empty * 2.7) + (mono * 1.0) + (smooth * 0.1) + (corner * 1.0);
 }
 
+function get_search_depth(board) {
+  // adaptive search: depth 2 during open boards, depth 3 during tight tactical phases
+  const empty = get_empty_cells(board).length;
+  return empty <= 5 ? 3 : 2;
+}
+
 function expectimax(board, depth, is_max_node, prob) {
-  if (depth === 0 || is_game_over(board))
+  if (depth === 0 || is_game_over(board)) {
+    nodes_evaluated++;
     return heuristic_evaluate(board);
+  }
 
   if (is_max_node) {
     let best = -Infinity;
@@ -68,7 +79,10 @@ function expectimax(board, depth, is_max_node, prob) {
 
   // chance node
   const empty = get_empty_cells(board);
-  if (empty.length === 0) return heuristic_evaluate(board);
+  if (empty.length === 0) {
+    nodes_evaluated++;
+    return heuristic_evaluate(board);
+  }
 
   let avg = 0;
   const cell_prob = prob / empty.length;
@@ -88,18 +102,33 @@ function expectimax(board, depth, is_max_node, prob) {
 }
 
 function ai_best_move(board) {
+  const t0 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+  nodes_evaluated = 0;
+  const search_depth = get_search_depth(board);
+  last_search_depth = search_depth;
+
   let best_dir = -1;
   let best_val = -Infinity;
 
   for (let dir = 0; dir < 4; dir++) {
     const result = move(board, dir);
     if (!result.moved) continue;
-    const val = result.score + expectimax(result.board, AI_DEPTH - 1, false, 1.0);
+    const val = result.score + expectimax(result.board, search_depth - 1, false, 1.0);
     if (val > best_val) {
       best_val = val;
       best_dir = dir;
     }
   }
 
+  const t1 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+  last_move_time_ms = t1 - t0;
   return best_dir;
+}
+
+function get_last_search_stats() {
+  return {
+    depth: last_search_depth,
+    time_ms: last_move_time_ms,
+    nodes: nodes_evaluated
+  };
 }
