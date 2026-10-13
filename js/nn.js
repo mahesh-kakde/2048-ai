@@ -8,6 +8,16 @@ const NN = (() => {
   let model = null;
   let ready = false;
 
+  // fast inference weights and pre-allocated buffers
+  let w1 = null, b1 = null;
+  let w2 = null, b2 = null;
+  let w3 = null, b3 = null;
+  let fast_ready = false;
+
+  const input_buf = new Float32Array(16);
+  const h1_buf = new Float32Array(128);
+  const h2_buf = new Float32Array(64);
+
   // states and cumulative scores recorded during current game
   let game_states = [];
   let game_scores = [];
@@ -20,7 +30,78 @@ const NN = (() => {
     return input;
   }
 
+  function sync_fast_weights() {
+    if (!model) return;
+    try {
+      const weights = model.getWeights();
+      // weights: [w1(16,128), b1(128), w2(128,64), b2(64), w3(64,1), b3(1)]
+      w1 = weights[0].dataSync();
+      b1 = weights[1].dataSync();
+      w2 = weights[2].dataSync();
+      b2 = weights[3].dataSync();
+      w3 = weights[4].dataSync();
+      b3 = weights[5].dataSync();
+      fast_ready = true;
+    } catch (_) {
+      fast_ready = false;
+    }
+  }
+
+  function fast_evaluate(board) {
+    let idx = 0;
+    for (let r = 0; r < 4; r++) {
+      for (let c = 0; c < 4; c++) {
+        const val = board[r][c];
+        input_buf[idx++] = val > 0 ? Math.log2(val) / 17 : 0;
+      }
+    }
+
+    // layer 1: dense 128 relu
+    for (let j = 0; j < 128; j++) {
+      h1_buf[j] = b1[j];
+    }
+    for (let i = 0; i < 16; i++) {
+      const x = input_buf[i];
+      if (x === 0) continue;
+      const row = i * 128;
+      for (let j = 0; j < 128; j++) {
+        h1_buf[j] += x * w1[row + j];
+      }
+    }
+    for (let j = 0; j < 128; j++) {
+      if (h1_buf[j] < 0) h1_buf[j] = 0;
+    }
+
+    // layer 2: dense 64 relu
+    for (let j = 0; j < 64; j++) {
+      h2_buf[j] = b2[j];
+    }
+    for (let i = 0; i < 128; i++) {
+      const h = h1_buf[i];
+      if (h === 0) continue;
+      const row = i * 64;
+      for (let j = 0; j < 64; j++) {
+        h2_buf[j] += h * w2[row + j];
+      }
+    }
+    for (let j = 0; j < 64; j++) {
+      if (h2_buf[j] < 0) h2_buf[j] = 0;
+    }
+
+    // layer 3: dense 1 linear
+    let out = b3[0];
+    for (let i = 0; i < 64; i++) {
+      const h = h2_buf[i];
+      if (h > 0) out += h * w3[i];
+    }
+
+    return out * SCORE_MAX;
+  }
+
   function nn_evaluate(board) {
+    if (fast_ready) {
+      return fast_evaluate(board);
+    }
     const input = encode_board(board);
     const t = tf.tensor2d([input], [1, 16]);
     const pred = model.predict(t);
@@ -40,13 +121,15 @@ const NN = (() => {
     try {
       model = await tf.loadLayersModel(LS_KEY);
       model.compile({ optimizer: tf.train.adam(LEARNING_RATE), loss: 'meanSquaredError' });
-      set_status('nn: loaded (local)');
+      sync_fast_weights();
+      set_status(fast_ready ? 'nn: fast engine active (local)' : 'nn: loaded (local)');
     } catch (_) {
       // fall back to the shipped model
       try {
         model = await tf.loadLayersModel(MODEL_URL);
         model.compile({ optimizer: tf.train.adam(LEARNING_RATE), loss: 'meanSquaredError' });
-        set_status('nn: loaded');
+        sync_fast_weights();
+        set_status(fast_ready ? 'nn: fast engine active' : 'nn: loaded');
       } catch (e) {
         set_status('nn: unavailable -- using heuristic');
         return;
@@ -83,6 +166,9 @@ const NN = (() => {
     xs.dispose();
     ys.dispose();
 
+    // refresh fast matrix weights with newly updated local parameters
+    sync_fast_weights();
+
     // persist updated weights to localstorage
     try {
       await model.save(LS_KEY);
@@ -99,7 +185,27 @@ const NN = (() => {
     game_scores = [];
   }
 
+  function benchmark(iterations = 1000) {
+    const test_board = [
+      [2, 4, 8, 16],
+      [32, 64, 128, 256],
+      [512, 1024, 2048, 4096],
+      [0, 2, 4, 8]
+    ];
+    const t0 = performance.now();
+    for (let i = 0; i < iterations; i++) {
+      fast_evaluate(test_board);
+    }
+    const t1 = performance.now();
+    const total_ms = t1 - t0;
+    return {
+      iterations,
+      total_ms: total_ms.toFixed(2),
+      per_eval_us: ((total_ms / iterations) * 1000).toFixed(2)
+    };
+  }
+
   load_model();
 
-  return { record_state, on_game_over, reset_game };
+  return { record_state, on_game_over, reset_game, benchmark, fast_evaluate };
 })();
