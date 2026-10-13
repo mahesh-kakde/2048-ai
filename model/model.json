@@ -27,22 +27,7 @@
             "dtype": "float32",
             "units": 128,
             "activation": "relu",
-            "use_bias": true,
-            "kernel_initializer": {
-              "class_name": "GlorotUniform",
-              "config": {
-                "seed": null
-              }
-            },
-            "bias_initializer": {
-              "class_name": "Zeros",
-              "config": {}
-            },
-            "kernel_regularizer": null,
-            "bias_regularizer": null,
-            "activity_regularizer": null,
-            "kernel_constraint": null,
-            "bias_constraint": null
+            "use_bias": true
           }
         },
         {
@@ -53,22 +38,7 @@
             "dtype": "float32",
             "units": 64,
             "activation": "relu",
-            "use_bias": true,
-            "kernel_initializer": {
-              "class_name": "GlorotUniform",
-              "config": {
-                "seed": null
-              }
-            },
-            "bias_initializer": {
-              "class_name": "Zeros",
-              "config": {}
-            },
-            "kernel_regularizer": null,
-            "bias_regularizer": null,
-            "activity_regularizer": null,
-            "kernel_constraint": null,
-            "bias_constraint": null
+            "use_bias": true
           }
         },
         {
@@ -79,22 +49,7 @@
             "dtype": "float32",
             "units": 1,
             "activation": "linear",
-            "use_bias": true,
-            "kernel_initializer": {
-              "class_name": "GlorotUniform",
-              "config": {
-                "seed": null
-              }
-            },
-            "bias_initializer": {
-              "class_name": "Zeros",
-              "config": {}
-            },
-            "kernel_regularizer": null,
-            "bias_regularizer": null,
-            "activity_regularizer": null,
-            "kernel_constraint": null,
-            "bias_constraint": null
+            "use_bias": true
           }
         }
       ]
@@ -109,7 +64,7 @@
       ],
       "weights": [
         {
-          "name": "dense/kernel",
+          "name": "kernel",
           "shape": [
             16,
             128
@@ -117,14 +72,14 @@
           "dtype": "float32"
         },
         {
-          "name": "dense/bias",
+          "name": "bias",
           "shape": [
             128
           ],
           "dtype": "float32"
         },
         {
-          "name": "dense_1/kernel",
+          "name": "kernel",
           "shape": [
             128,
             64
@@ -132,14 +87,14 @@
           "dtype": "float32"
         },
         {
-          "name": "dense_1/bias",
+          "name": "bias",
           "shape": [
             64
           ],
           "dtype": "float32"
         },
         {
-          "name": "dense_2/kernel",
+          "name": "kernel",
           "shape": [
             64,
             1
@@ -147,7 +102,7 @@
           "dtype": "float32"
         },
         {
-          "name": "dense_2/bias",
+          "name": "bias",
           "shape": [
             1
           ],
