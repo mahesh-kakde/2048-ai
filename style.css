@@ -354,6 +354,10 @@ body {
   font-weight: 600;
 }
 
+.modal-content h2:not(:first-child) {
+  margin-top: 20px;
+}
+
 /* -- responsive -- */
 
 @media (max-width: 480px) {

@@ -94,6 +94,10 @@ const Game = (() => {
   }
 
   function handle_key(e) {
+    if (e.key === 'Escape') {
+      document.getElementById('modal-overlay').classList.remove('active');
+      return;
+    }
     if (ai_playing) return;
     const map = { ArrowUp: 0, ArrowRight: 1, ArrowDown: 2, ArrowLeft: 3 };
     if (map[e.key] !== undefined) {
@@ -164,6 +168,16 @@ const Game = (() => {
     new_game_btn.addEventListener('click', new_game);
     retry_btn.addEventListener('click', new_game);
     ai_btn.addEventListener('click', toggle_ai);
+
+    const info_btn = document.getElementById('info-btn');
+    const modal_overlay = document.getElementById('modal-overlay');
+    const modal_close_btn = document.getElementById('modal-close');
+
+    info_btn.addEventListener('click', () => modal_overlay.classList.add('active'));
+    modal_close_btn.addEventListener('click', () => modal_overlay.classList.remove('active'));
+    modal_overlay.addEventListener('click', e => {
+      if (e.target === modal_overlay) modal_overlay.classList.remove('active');
+    });
 
     new_game();
   }

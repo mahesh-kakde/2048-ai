@@ -69,7 +69,21 @@
   <div class="modal-overlay" id="modal-overlay">
     <div class="modal" id="modal">
       <button class="btn-icon modal-close" id="modal-close" aria-label="close">x</button>
-      <div class="modal-content" id="modal-content"></div>
+      <div class="modal-content" id="modal-content">
+        <h2>2048 ai</h2>
+        <p>i play 2048 a lot. hit 8192 -- but 16384 has always been out of reach. built the ai to finally get there.</p>
+
+        <h2>how the ai works</h2>
+        <p>the ai uses <strong>expectimax search</strong> -- it simulates all four possible moves and random tile spawns several steps ahead. at the end of each branch, a small <strong>neural network</strong> scores the board. the network was trained on 548,000 board states from 500 self-played games.</p>
+
+        <h2>local learning</h2>
+        <p>after each game, the model fine-tunes itself in your browser using the boards from that game. the updated weights are saved to localstorage, so it improves the more you use it.</p>
+
+        <h2>built with</h2>
+        <p>vanilla javascript, tensorflow.js, keras -- trained on kaggle. no backend, no build step.</p>
+
+        <p><a href="https://github.com/mahesh-kakde/2048-nn" target="_blank" rel="noopener">github &rarr;</a></p>
+      </div>
     </div>
   </div>
 
