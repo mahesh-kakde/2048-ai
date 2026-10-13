@@ -37,7 +37,11 @@ play 2048 yourself with arrow keys, or press a button and watch the ai take over
    ```
    npx serve .
    ```
-   or just open `index.html` in your browser.
+   or with python:
+   ```
+   python -m http.server 8000
+   ```
+   (a local server is required for tensorflow.js to load the model weights).
 
 3. play with arrow keys or press "let ai play" to watch the ai.
 
