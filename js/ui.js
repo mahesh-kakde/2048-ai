@@ -73,11 +73,30 @@ const UI = (() => {
     message_el.classList.remove('active');
   }
 
+  const latency_el = document.getElementById('latency-badge');
+
+  function update_latency(ms) {
+    if (!latency_el) return;
+    if (ms === null || ms === undefined) {
+      latency_el.textContent = '-- ms';
+    } else {
+      latency_el.textContent = `${Math.round(ms)} ms`;
+    }
+  }
+
+  function set_turbo(is_turbo) {
+    if (board_el) {
+      board_el.classList.toggle('turbo', is_turbo);
+    }
+  }
+
   return {
     render,
     update_score,
     update_best,
     show_message,
-    hide_message
+    hide_message,
+    update_latency,
+    set_turbo
   };
 })();

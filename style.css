@@ -85,6 +85,25 @@ body {
   font-weight: 400;
 }
 
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.latency-badge {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-light);
+  background: rgba(187, 173, 160, 0.15);
+  border: 1px solid var(--board-bg);
+  padding: 5px 11px;
+  border-radius: 14px;
+  letter-spacing: 0.5px;
+  user-select: none;
+}
+
 .btn-icon {
   width: 36px;
   height: 36px;
@@ -293,6 +312,21 @@ body {
   border-color: var(--text);
 }
 
+.btn-turbo {
+  background: var(--tile-8) !important;
+  border-color: var(--tile-8) !important;
+  color: var(--tile-text-light) !important;
+}
+
+.btn-turbo:hover {
+  background: var(--tile-16) !important;
+  border-color: var(--tile-16) !important;
+}
+
+.board.turbo .tile {
+  transition: top 50ms linear, left 50ms linear;
+}
+
 .btn:focus-visible,
 .btn-icon:focus-visible {
   outline: 2px solid var(--text);
@@ -388,5 +422,19 @@ body {
 
   .score-value {
     font-size: 1.1rem;
+  }
+
+  .controls {
+    gap: 6px;
+  }
+
+  .controls .btn {
+    padding: 8px 6px;
+    font-size: 0.76rem;
+  }
+
+  .latency-badge {
+    font-size: 0.68rem;
+    padding: 4px 8px;
   }
 }

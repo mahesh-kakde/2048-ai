@@ -18,7 +18,10 @@
 
     <header class="header">
       <h1 class="title">2048 <span class="title-accent">ai</span></h1>
-      <button class="btn-icon" id="info-btn" aria-label="info">?</button>
+      <div class="header-right">
+        <span class="latency-badge" id="latency-badge" title="ai move latency">-- ms</span>
+        <button class="btn-icon" id="info-btn" aria-label="info">?</button>
+      </div>
     </header>
 
     <div class="scores">
@@ -60,6 +63,7 @@
 
     <div class="controls">
       <button class="btn btn-primary" id="ai-btn">let ai play</button>
+      <button class="btn" id="speed-btn">speed: normal</button>
       <button class="btn" id="new-game-btn">new game</button>
     </div>
 
@@ -77,7 +81,7 @@
         <p>i play 2048 a lot. hit 8192 -- but 16384 has always been out of reach. built the ai to finally get there.</p>
 
         <h2>how the ai works</h2>
-        <p>the ai uses <strong>expectimax search</strong> -- it simulates all four possible moves and random tile spawns several steps ahead. at the end of each branch, a small <strong>neural network</strong> scores the board. the network was trained on 548,000 board states from 500 self-played games.</p>
+        <p>the ai uses <strong>adaptive expectimax search</strong> -- dynamically shifting between depth 2 on open boards and depth 3 during tight tactical phases. at each evaluation, a pure javascript <strong>neural network matrix engine</strong> scores the board in sub-0.03ms. the network was trained on 47 million board states across 5,000 games with 8x dihedral symmetry augmentation.</p>
 
         <h2>local learning</h2>
         <p>after each game, the model fine-tunes itself in your browser using the boards from that game. the updated weights are saved to localstorage, so it improves the more you use it.</p>

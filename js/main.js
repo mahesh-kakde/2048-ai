@@ -7,8 +7,10 @@ const Game = (() => {
   let ai_playing = false;
 
   const ai_btn = document.getElementById('ai-btn');
+  const speed_btn = document.getElementById('speed-btn');
   const new_game_btn = document.getElementById('new-game-btn');
   const retry_btn = document.getElementById('retry-btn');
+  let turbo_mode = false;
 
   function find_merged_positions(old_board, new_board, direction) {
     // a cell in new_board was a merge if its value > 0, it's double some value
@@ -86,6 +88,7 @@ const Game = (() => {
     input_locked = false;
     ai_playing = false;
     ai_btn.textContent = 'let ai play';
+    if (typeof UI.update_latency === 'function') UI.update_latency(null);
     if (typeof NN !== 'undefined') NN.reset_game();
     UI.hide_message();
     UI.update_score(0);
@@ -133,11 +136,23 @@ const Game = (() => {
     }
   }
 
+  function toggle_speed() {
+    turbo_mode = !turbo_mode;
+    if (speed_btn) {
+      speed_btn.textContent = turbo_mode ? 'speed: turbo' : 'speed: normal';
+      speed_btn.classList.toggle('btn-turbo', turbo_mode);
+    }
+    if (typeof UI.set_turbo === 'function') UI.set_turbo(turbo_mode);
+  }
+
   function toggle_ai() {
     if (typeof ai_best_move !== 'function') return;
 
     ai_playing = !ai_playing;
     ai_btn.textContent = ai_playing ? 'stop ai' : 'let ai play';
+    if (!ai_playing && typeof UI.update_latency === 'function') {
+      UI.update_latency(null);
+    }
 
     if (ai_playing) ai_step();
   }
@@ -146,6 +161,7 @@ const Game = (() => {
     if (!ai_playing || game_over) {
       ai_playing = false;
       ai_btn.textContent = 'let ai play';
+      if (typeof UI.update_latency === 'function') UI.update_latency(null);
       return;
     }
 
@@ -153,11 +169,18 @@ const Game = (() => {
     if (dir === -1) {
       ai_playing = false;
       ai_btn.textContent = 'let ai play';
+      if (typeof UI.update_latency === 'function') UI.update_latency(null);
       return;
     }
 
+    if (typeof get_last_search_stats === 'function' && typeof UI.update_latency === 'function') {
+      const stats = get_last_search_stats();
+      UI.update_latency(stats.time_ms);
+    }
+
     do_move(dir);
-    setTimeout(ai_step, 300);
+    const delay = turbo_mode ? 40 : 200;
+    setTimeout(ai_step, delay);
   }
 
   function init() {
@@ -168,6 +191,7 @@ const Game = (() => {
     new_game_btn.addEventListener('click', new_game);
     retry_btn.addEventListener('click', new_game);
     ai_btn.addEventListener('click', toggle_ai);
+    if (speed_btn) speed_btn.addEventListener('click', toggle_speed);
 
     const info_btn = document.getElementById('info-btn');
     const modal_overlay = document.getElementById('modal-overlay');
