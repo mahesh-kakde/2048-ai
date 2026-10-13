@@ -44,11 +44,11 @@ const Game = (() => {
   function do_move(direction) {
     if (game_over || input_locked) return;
 
-    if (typeof NN !== 'undefined') NN.record_state(board, score);
-
     const old_board = clone(board);
     const result = move(board, direction);
     if (!result.moved) return;
+
+    if (typeof NN !== 'undefined') NN.record_state(old_board, score);
 
     input_locked = true;
 
