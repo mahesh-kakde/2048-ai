@@ -1,0 +1,18 @@
+{
+  "total_games_trained": 100000,
+  "eval_games": 1000,
+  "mean_score": 21683.148,
+  "median_score": 19884.0,
+  "max_score": 62728,
+  "tile_distribution": {
+    "128": "1 (0.1%)",
+    "256": "14 (1.4%)",
+    "512": "59 (5.9%)",
+    "1024": "504 (50.4%)",
+    "2048": "420 (42.0%)",
+    "4096": "2 (0.2%)"
+  },
+  "export_file": "tuples_v3.bin",
+  "num_weights": 4194304,
+  "file_size_bytes": 16777216
+}
