@@ -97,7 +97,6 @@ const UI = (() => {
   }
 
   const hud_el = document.getElementById('decision-hud');
-  const hud_status_el = document.getElementById('hud-status');
   const hud_dirs = {
     0: { el: document.getElementById('hud-dir-up'), val_el: document.getElementById('hud-val-up') },
     1: { el: document.getElementById('hud-dir-right'), val_el: document.getElementById('hud-val-right') },
@@ -108,7 +107,6 @@ const UI = (() => {
   function update_decision_hud(telemetry) {
     if (!hud_el) return;
     if (!telemetry) {
-      if (hud_status_el) hud_status_el.textContent = 'idle';
       for (let d = 0; d < 4; d++) {
         const item = hud_dirs[d];
         if (!item || !item.el) continue;
@@ -117,8 +115,6 @@ const UI = (() => {
       }
       return;
     }
-
-    if (hud_status_el) hud_status_el.textContent = 'active';
 
     const vals = [telemetry.up, telemetry.right, telemetry.down, telemetry.left];
     const best_d = telemetry.best_dir;
@@ -144,7 +140,6 @@ const UI = (() => {
     if (!hud_el) return;
     hud_el.classList.toggle('active', !!show);
     if (!show) {
-      if (hud_status_el) hud_status_el.textContent = 'idle';
       for (let d = 0; d < 4; d++) {
         const item = hud_dirs[d];
         if (!item || !item.el) continue;
