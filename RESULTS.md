@@ -51,20 +51,52 @@ scaled neural network with pure javascript matrix inference and adaptive expecti
 
 ---
 
+## model v3
+
+symmetric n-tuple network with td reinforcement learning and expectimax search:
+- architecture: 4 base 5-tuples expanded across 8 d4 dihedral symmetries into 32 lookup tables (4,194,304 float32 weights, 16.77 mb binary table)
+- training: td(0) reinforcement learning across 100,000 self-play games on kaggle with learning rate decay (0.05 -> 0.002)
+- inference engine: direct float32array table lookups in pure javascript (0.5µs per evaluation, ~2,000,000 evals/sec)
+- search strategy: expectimax lookahead with 64-bit zobrist transposition table (131,072 entries) and selective chance pruning
+- continuous evaluation (100 games):
+  - games played: 100
+  - mean score: 38,406
+  - median score: 36,436
+  - max score: 73,128
+  - min score: 8,992
+  - score standard deviation: 13,299
+  - average moves per game: 1,940
+  - average move latency: 5.58ms / move
+  - max tile reached: 4,096 (21 games)
+  - tile distribution:
+    - 512: 1 (1.0%)
+    - 1024: 9 (9.0%)
+    - 2048: 69 (69.0%)
+    - 4096: 21 (21.0%)
+  - 2048+ achievement rate: 90.0% (90 out of 100 games)
+- developer benchmark comparison:
+  - developer high score: 144,868 points (8,192 tile achieved in 4,913 moves)
+  - v3 peak score: 73,128 points (50.5% of developer record, 4,096 tile)
+  - v3 mean score: 38,406 points (18.3x improvement over v2's 2,098 points)
+  - move latency: 5.58ms per move (4.5x faster than v2, 900x faster than v1)
+
+---
+
 ## comparisons
 
-| version | avg score | max tile reached | move latency | dataset size | notes |
-|---------|-----------|------------------|--------------|--------------|-------|
-| heuristic only | 19815 | 4096 | ~30ms | n/a | hand-crafted heuristic |
-| model v1 | 19800+ | 4096 | ~5000ms+ | 548k | slow tfjs tensor allocation locks |
-| model v2 | 2098 | 512 | ~12-25ms | 47m | pure js matrix engine, 8x symmetry, turbo mode |
+| version | avg score | median score | max score | max tile reached | 2048+ rate | move latency | model architecture |
+|---------|-----------|--------------|-----------|------------------|------------|--------------|-------------------|
+| heuristic only | 19,815 | ~18,500 | 62,144 | 4096 | 35.4% | ~30ms | hand-crafted heuristic rules |
+| model v1 | 19,800+ | ~18,200 | 60,000+ | 4096 | 34.0% | ~5,000ms+ | tensorflow.js mlp (548k states) |
+| model v2 | 2,098 | 1,496 | 7,232 | 512 | 0.0% | ~12-25ms | pure js matrix mlp (47m states) |
+| model v3 | 38,406 | 36,436 | 73,128 | 4096 | 90.0% | ~5.6ms | 32-symmetric n-tuple (100k games) |
 
 ---
 
 ## local learning observations
 
 tracks how the model refines weights client-side per-user:
-- fine-tunes 2 gradient descent steps after every completed game
-- persists updated weights directly to browser localstorage (isolated under `localstorage://2048-nn-model-v2`)
-- fast matrix engine automatically synchronizes with updated weights upon fine-tuning
-- automatically reloaded on return visits
+- fine-tunes tuple weights after completed games using td error updates directly in the browser
+- persists updated weight buffers asynchronously into indexeddb (`2048_ai_db`)
+- loads from indexeddb on startup when available, falling back to shipped binary weights (`model/tuples_v3.bin`)
+- bypasses localstorage 5mb storage ceiling via raw arraybuffer storage
