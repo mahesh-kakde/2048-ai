@@ -89,6 +89,8 @@ const Game = (() => {
     ai_playing = false;
     ai_btn.textContent = 'let ai play';
     if (typeof UI.update_latency === 'function') UI.update_latency(null);
+    if (typeof UI.update_decision_hud === 'function') UI.update_decision_hud(null);
+    if (typeof UI.show_decision_hud === 'function') UI.show_decision_hud(false);
     if (typeof NN !== 'undefined') NN.reset_game();
     UI.hide_message();
     UI.update_score(0);
@@ -150,8 +152,12 @@ const Game = (() => {
 
     ai_playing = !ai_playing;
     ai_btn.textContent = ai_playing ? 'stop ai' : 'let ai play';
-    if (!ai_playing && typeof UI.update_latency === 'function') {
-      UI.update_latency(null);
+    if (!ai_playing) {
+      if (typeof UI.update_latency === 'function') UI.update_latency(null);
+      if (typeof UI.update_decision_hud === 'function') UI.update_decision_hud(null);
+      if (typeof UI.show_decision_hud === 'function') UI.show_decision_hud(false);
+    } else {
+      if (typeof UI.show_decision_hud === 'function') UI.show_decision_hud(true);
     }
 
     if (ai_playing) ai_step();
@@ -162,6 +168,8 @@ const Game = (() => {
       ai_playing = false;
       ai_btn.textContent = 'let ai play';
       if (typeof UI.update_latency === 'function') UI.update_latency(null);
+      if (typeof UI.update_decision_hud === 'function') UI.update_decision_hud(null);
+      if (typeof UI.show_decision_hud === 'function') UI.show_decision_hud(false);
       return;
     }
 
@@ -170,12 +178,15 @@ const Game = (() => {
       ai_playing = false;
       ai_btn.textContent = 'let ai play';
       if (typeof UI.update_latency === 'function') UI.update_latency(null);
+      if (typeof UI.update_decision_hud === 'function') UI.update_decision_hud(null);
+      if (typeof UI.show_decision_hud === 'function') UI.show_decision_hud(false);
       return;
     }
 
-    if (typeof get_last_search_stats === 'function' && typeof UI.update_latency === 'function') {
+    if (typeof get_last_search_stats === 'function') {
       const stats = get_last_search_stats();
-      UI.update_latency(stats.time_ms);
+      if (typeof UI.update_latency === 'function') UI.update_latency(stats.time_ms);
+      if (typeof UI.update_decision_hud === 'function') UI.update_decision_hud(stats.directional);
     }
 
     do_move(dir);
@@ -203,11 +214,24 @@ const Game = (() => {
       if (e.target === modal_overlay) modal_overlay.classList.remove('active');
     });
 
+    const tab_btns = document.querySelectorAll('.modal-tab');
+    tab_btns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        tab_btns.forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.modal-tab-content').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        const tab_id = 'tab-' + btn.getAttribute('data-tab');
+        const target = document.getElementById(tab_id);
+        if (target) target.classList.add('active');
+      });
+    });
+
     new_game();
   }
 
-  // expose do_move and board for ai module
+// expose do_move and board for ai module
   return { init, do_move, get_board: () => board, is_over: () => game_over };
 })();
 
+if (typeof window !== 'undefined') window.Game = Game;
 Game.init();

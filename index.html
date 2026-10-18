@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="2048 with an ai agent powered by expectimax search and a neural network board evaluator. runs fully in the browser.">
-  <meta name="theme-color" content="#bbada0">
+  <meta name="description" content="2048 with an ai agent powered by expectimax search and an n-tuple network evaluator. runs fully in the browser.">
+  <meta name="theme-color" content="#faf8f0">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='5' fill='%23edc22e'/><text x='16' y='22' text-anchor='middle' font-family='monospace' font-weight='700' font-size='18' fill='%23776e65'>2k</text></svg>">
   <title>2048 ai</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -20,7 +20,7 @@
       <h1 class="title">2048 <span class="title-accent">ai</span></h1>
       <div class="header-right">
         <span class="latency-badge" id="latency-badge" title="ai move latency">-- ms</span>
-        <button class="btn-icon" id="info-btn" aria-label="info">?</button>
+        <button class="btn-nerds" id="info-btn">info for nerds</button>
       </div>
     </header>
 
@@ -61,6 +61,25 @@
       </div>
     </div>
 
+    <div class="decision-hud" id="decision-hud">
+      <div class="hud-dir" data-dir="0" id="hud-dir-up">
+        <span class="hud-label">up</span>
+        <span class="hud-val" id="hud-val-up">&mdash;</span>
+      </div>
+      <div class="hud-dir" data-dir="1" id="hud-dir-right">
+        <span class="hud-label">right</span>
+        <span class="hud-val" id="hud-val-right">&mdash;</span>
+      </div>
+      <div class="hud-dir" data-dir="2" id="hud-dir-down">
+        <span class="hud-label">down</span>
+        <span class="hud-val" id="hud-val-down">&mdash;</span>
+      </div>
+      <div class="hud-dir" data-dir="3" id="hud-dir-left">
+        <span class="hud-label">left</span>
+        <span class="hud-val" id="hud-val-left">&mdash;</span>
+      </div>
+    </div>
+
     <div class="controls">
       <button class="btn btn-primary" id="ai-btn">let ai play</button>
       <button class="btn" id="speed-btn">speed: normal</button>
@@ -76,25 +95,59 @@
   <div class="modal-overlay" id="modal-overlay">
     <div class="modal" id="modal">
       <button class="btn-icon modal-close" id="modal-close" aria-label="close">x</button>
-      <div class="modal-content" id="modal-content">
-        <h2>2048 ai</h2>
-        <p>i play 2048 a lot. hit 8192 -- but 16384 has always been out of reach. built the ai to finally get there.</p>
+      
+      <div class="modal-tabs">
+        <button class="modal-tab active" data-tab="benchmark">personal benchmark</button>
+        <button class="modal-tab" data-tab="technical">technical notes</button>
+      </div>
 
-        <h2>how the ai works</h2>
-        <p>the ai uses <strong>adaptive expectimax search</strong> -- dynamically shifting between depth 2 on open boards and depth 3 during tight tactical phases. at each evaluation, a pure javascript <strong>neural network matrix engine</strong> scores the board in sub-0.03ms. the network was trained on 47 million board states across 5,000 games with 8x dihedral symmetry augmentation.</p>
+      <div class="modal-tab-content active" id="tab-benchmark">
+        <h2>personal benchmark: 144,868</h2>
+        <p>i reached the 8,192 tile in 4,913 moves with a final score of 144,868. playing past 8k by hand requires thousands of consistent moves without a mistake, so i wanted to build an ai system that could play at this level and reach 16,384 and 32,768.</p>
 
-        <h2>local learning</h2>
-        <p>after each game, the model fine-tunes itself in your browser using the boards from that game. the updated weights are saved to localstorage, so it improves the more you use it.</p>
+        <div class="score-card-images">
+          <figure>
+            <img src="High%20Score%20%5B1%5D.jpg" alt="first 8,192 tile achieved in 4913 moves" loading="lazy">
+            <figcaption>first 8,192 tile (4,913 moves)</figcaption>
+          </figure>
+          <figure>
+            <img src="High%20Score%20%5B2%5D.jpg" alt="high score 144,868 points" loading="lazy">
+            <figcaption>high score: 144,868 points</figcaption>
+          </figure>
+        </div>
 
-        <h2>built with</h2>
-        <p>vanilla javascript, tensorflow.js, keras -- trained on kaggle. no backend, no build step.</p>
+        <p>the benchmark to reach: <strong>144,868 points</strong>. in version 3, my goal is consistent 8k games and reaching 16,384 and 32,768 tiles.</p>
+      </div>
+
+      <div class="modal-tab-content" id="tab-technical">
+        <h2>technical notes</h2>
+        
+        <h3>engine evolution</h3>
+        <p><strong>version 1:</strong> expectimax lookahead backed by a tensorflow.js neural network board evaluator. in-browser inference was heavy (&gt;100ms per move), bottlenecking search tree depth.</p>
+        <p><strong>version 2:</strong> replaced tensorflow.js with a pure javascript matrix engine (&lt;0.03ms). but performance dropped to ~512 average tile -- scalar mse regression lost spatial board topology, and shallow depth 2 lookahead was vulnerable to tactical traps.</p>
+        <p><strong>version 3 (current):</strong> <strong>n-tuple network</strong> trained via <strong>temporal difference learning (td)</strong> across 100,000 self-play games on kaggle:</p>
+        
+        <ul class="modal-list">
+          <li><strong>4 base 5-tuples</strong> capturing corner clusters, monotonicity lines, and l-corridors.</li>
+          <li><strong>8 d4 dihedral symmetries</strong> expanding into 32 lookup tables (4,194,304 float32 weights, 16.77 mb binary table).</li>
+          <li><strong>fast pure javascript inference</strong> (0.5&micro;s per board, ~2,000,000 evals/sec).</li>
+          <li><strong>64-bit zobrist transposition table</strong> (131,072 entries) caching deterministic subtrees with ~30% hit rates.</li>
+          <li><strong>depth 3-4 expectimax</strong> with selective chance pruning (&lt;25ms real-time latency).</li>
+          <li><strong>directional decision telemetry</strong> exposing real-time expected values (&uarr;, &rarr;, &darr;, &larr;).</li>
+        </ul>
+
+        <h3>local learning</h3>
+        <p>after each game, client-side td updates fine-tune the tuple weights directly in your browser. updated tables are persisted into indexeddb.</p>
+
+        <h3>built with</h3>
+        <p>vanilla javascript, indexeddb, python / numpy (trained on kaggle).</p>
 
         <p><a href="https://github.com/mahesh-kakde/2048-nn" target="_blank" rel="noopener">github &rarr;</a></p>
       </div>
+
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0/dist/tf.min.js"></script>
   <script src="js/game.js"></script>
   <script src="js/tuple.js"></script>
   <script src="js/ui.js"></script>

@@ -20,7 +20,13 @@ const UI = (() => {
     const pos = get_cell_position(row, col);
     const el = document.createElement('div');
     el.className = 'tile';
-    if (value > 2048) el.classList.add('tile-super');
+    if (value > 2048) {
+      if (value === 4096) el.classList.add('tile-4096');
+      else if (value === 8192) el.classList.add('tile-8192');
+      else if (value === 16384) el.classList.add('tile-16384');
+      else if (value === 32768) el.classList.add('tile-32768');
+      else el.classList.add('tile-super');
+    }
     el.setAttribute('data-value', value);
     el.textContent = value;
     el.style.left = pos.left + 'px';
@@ -90,6 +96,64 @@ const UI = (() => {
     }
   }
 
+  const hud_el = document.getElementById('decision-hud');
+  const hud_status_el = document.getElementById('hud-status');
+  const hud_dirs = {
+    0: { el: document.getElementById('hud-dir-up'), val_el: document.getElementById('hud-val-up') },
+    1: { el: document.getElementById('hud-dir-right'), val_el: document.getElementById('hud-val-right') },
+    2: { el: document.getElementById('hud-dir-down'), val_el: document.getElementById('hud-val-down') },
+    3: { el: document.getElementById('hud-dir-left'), val_el: document.getElementById('hud-val-left') }
+  };
+
+  function update_decision_hud(telemetry) {
+    if (!hud_el) return;
+    if (!telemetry) {
+      if (hud_status_el) hud_status_el.textContent = 'idle';
+      for (let d = 0; d < 4; d++) {
+        const item = hud_dirs[d];
+        if (!item || !item.el) continue;
+        item.el.classList.remove('hud-dir-best', 'hud-dir-invalid');
+        if (item.val_el) item.val_el.textContent = '—';
+      }
+      return;
+    }
+
+    if (hud_status_el) hud_status_el.textContent = 'active';
+
+    const vals = [telemetry.up, telemetry.right, telemetry.down, telemetry.left];
+    const best_d = telemetry.best_dir;
+
+    for (let d = 0; d < 4; d++) {
+      const item = hud_dirs[d];
+      if (!item || !item.el) continue;
+      const v = vals[d];
+      item.el.classList.toggle('hud-dir-best', d === best_d);
+      item.el.classList.toggle('hud-dir-invalid', v === null || v === undefined);
+
+      if (item.val_el) {
+        if (v === null || v === undefined) {
+          item.val_el.textContent = 'blocked';
+        } else {
+          item.val_el.textContent = Math.round(v).toLocaleString();
+        }
+      }
+    }
+  }
+
+  function show_decision_hud(show) {
+    if (!hud_el) return;
+    hud_el.classList.toggle('active', !!show);
+    if (!show) {
+      if (hud_status_el) hud_status_el.textContent = 'idle';
+      for (let d = 0; d < 4; d++) {
+        const item = hud_dirs[d];
+        if (!item || !item.el) continue;
+        item.el.classList.remove('hud-dir-best', 'hud-dir-invalid');
+        if (item.val_el) item.val_el.textContent = '—';
+      }
+    }
+  }
+
   return {
     render,
     update_score,
@@ -97,6 +161,10 @@ const UI = (() => {
     show_message,
     hide_message,
     update_latency,
-    set_turbo
+    set_turbo,
+    show_decision_hud,
+    update_decision_hud
   };
 })();
+
+if (typeof window !== 'undefined') window.UI = UI;
