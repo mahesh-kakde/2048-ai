@@ -50,7 +50,7 @@ const Game = (() => {
     const result = move(board, direction);
     if (!result.moved) return;
 
-    if (typeof NN !== 'undefined') NN.record_state(old_board, score);
+    if (typeof NN !== 'undefined') NN.record_state(old_board, score, result.board, result.score);
 
     input_locked = true;
 
