@@ -225,6 +225,46 @@ function ai_best_move(board) {
   tt_hits_count = 0;
   current_search_age = (current_search_age + 1) & 0xFF;
 
+  // 1. hybrid arbitrator: query perimeter defense tablebase first
+  if (typeof Tablebase !== 'undefined' && Tablebase.is_ready()) {
+    const tb = Tablebase.query_any(board);
+    if (tb && tb.matched) {
+      const tb_sim = move(board, tb.move);
+      if (tb_sim.moved) {
+        const t1 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+        last_move_time_ms = t1 - t0;
+        last_search_depth = 'tablebase';
+
+        const dir_values = [null, null, null, null];
+        for (let d = 0; d < 4; d++) {
+          const res = move(board, d);
+          if (!res.moved) {
+            dir_values[d] = null;
+          } else if (d === tb.move) {
+            dir_values[d] = 'pdf-' + tb.target_tile;
+          } else {
+            const is_violation = (typeof check_anchor_violation === 'function') && check_anchor_violation(board, res.board);
+            dir_values[d] = is_violation ? -ANCHOR_PENALTY : 'tactical';
+          }
+        }
+
+        last_directional_telemetry = {
+          up: dir_values[0],
+          right: dir_values[1],
+          down: dir_values[2],
+          left: dir_values[3],
+          best_dir: tb.move,
+          raw: dir_values,
+          source: 'pdf-' + tb.target_tile,
+          target_tile: tb.target_tile
+        };
+
+        return tb.move;
+      }
+    }
+  }
+
+  // 2. fallback to expectimax search during open-board phases
   const search_depth = get_search_depth(board);
   last_search_depth = search_depth;
 
@@ -257,7 +297,8 @@ function ai_best_move(board) {
     down: dir_values[2],
     left: dir_values[3],
     best_dir: best_dir,
-    raw: [dir_values[0], dir_values[1], dir_values[2], dir_values[3]]
+    raw: [dir_values[0], dir_values[1], dir_values[2], dir_values[3]],
+    source: 'expectimax'
   };
 
   const t1 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
@@ -275,6 +316,7 @@ function get_last_search_stats() {
     time_ms: last_move_time_ms,
     nodes: nodes_evaluated,
     tt_hits: tt_hits_count,
-    directional: last_directional_telemetry
+    directional: last_directional_telemetry,
+    source: last_directional_telemetry.source || 'expectimax'
   };
 }

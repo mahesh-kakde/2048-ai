@@ -129,9 +129,9 @@ const NN = (() => {
 
     if (is_local) {
       const count = localStorage.getItem(LS_GAMES_KEY) || '1';
-      set_status(`v3 tuple engine active (local learned: ${count} games)`);
+      set_status(`v4 hybrid engine active (tablebase + local learned: ${count} games)`);
     } else {
-      set_status('v3 tuple engine active (100k trained weights)');
+      set_status('v4 hybrid engine active (tablebase + n-tuple)');
     }
   }
 
@@ -272,7 +272,7 @@ const NN = (() => {
         const count = (parseInt(localStorage.getItem(LS_GAMES_KEY), 10) || 0) + 1;
         localStorage.setItem(LS_GAMES_KEY, count);
         is_fine_tuned = true;
-        set_status(`v3 tuple engine active (local learned: ${count} games)`);
+        set_status(`v4 hybrid engine active (tablebase + local learned: ${count} games)`);
       }
     } catch (e) {
       console.warn('idb save error:', e);

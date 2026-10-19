@@ -85,6 +85,10 @@ const UI = (() => {
     if (!latency_el) return;
     if (ms === null || ms === undefined) {
       latency_el.textContent = '-- ms';
+    } else if (typeof ms === 'string') {
+      latency_el.textContent = ms;
+    } else if (ms < 1) {
+      latency_el.textContent = `${ms.toFixed(1)} ms`;
     } else {
       latency_el.textContent = `${Math.round(ms)} ms`;
     }
@@ -131,6 +135,8 @@ const UI = (() => {
       if (item.val_el) {
         if (v === null || v === undefined) {
           item.val_el.textContent = 'blocked';
+        } else if (typeof v === 'string') {
+          item.val_el.textContent = v;
         } else if (is_danger) {
           item.val_el.textContent = 'danger';
         } else {

@@ -185,7 +185,13 @@ const Game = (() => {
 
     if (typeof get_last_search_stats === 'function') {
       const stats = get_last_search_stats();
-      if (typeof UI.update_latency === 'function') UI.update_latency(stats.time_ms);
+      if (typeof UI.update_latency === 'function') {
+        if (stats.source && stats.source.startsWith('pdf-')) {
+          UI.update_latency(stats.time_ms < 0.1 ? '<0.1 ms' : `${stats.time_ms.toFixed(1)} ms`);
+        } else {
+          UI.update_latency(stats.time_ms);
+        }
+      }
       if (typeof UI.update_decision_hud === 'function') UI.update_decision_hud(stats.directional);
     }
 
