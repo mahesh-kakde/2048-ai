@@ -196,11 +196,12 @@ const UI = (() => {
       if (valid_count > 0 && max_v > -Infinity) {
         const weights = [0, 0, 0, 0];
         let total_weight = 0;
-        const temp = 1.8;
+        const temp = Math.max(10, Math.abs(max_v) * 0.05);
         for (let d = 0; d < 4; d++) {
           const v = vals[d];
           if (typeof v === 'number' && v > -1e6) {
-            const w = Math.exp((v - max_v) / temp);
+            const diff = (v - max_v) / temp;
+            const w = Math.exp(Math.max(-20, diff));
             weights[d] = w;
             total_weight += w;
           }

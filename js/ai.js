@@ -151,51 +151,93 @@ function encode_board_bitboard(board) {
   return bb;
 }
 
-function heuristic_evaluate(board) {
-  let empty = 0;
-  let max_val = 0;
-  let mono = 0;
-  let smooth = 0;
+function rank_tile_score(r) {
+  return r === 0 ? 0 : (r << r);
+}
 
+const SCORE_MAP_DESC = new Int32Array(65536);
+const SCORE_MAP_ASC = new Int32Array(65536);
+
+for (let i = 0; i < 65536; i++) {
+  const c0 = i & 0xF;
+  const c1 = (i >> 4) & 0xF;
+  const c2 = (i >> 8) & 0xF;
+  const c3 = (i >> 12) & 0xF;
+
+  const a0 = rank_tile_score(c0);
+  const a1 = rank_tile_score(c1);
+  const a2 = rank_tile_score(c2);
+  const a3 = rank_tile_score(c3);
+
+  // descending (left to right)
+  let score_desc = a0;
+  score_desc += (a0 >= a1) ? (a0 + a1) : ((a0 - a1) * 12);
+  if (a0 === a1 && a0 > 0) score_desc += a0;
+  score_desc += (a1 >= a2) ? (a1 + a2) : ((a1 - a2) * 12);
+  if (a1 === a2 && a1 > 0) score_desc += a1;
+  score_desc += (a2 >= a3) ? (a2 + a3) : ((a2 - a3) * 12);
+  if (a2 === a3 && a2 > 0) score_desc += a2;
+  SCORE_MAP_DESC[i] = score_desc;
+
+  // ascending (right to left)
+  let score_asc = a3;
+  score_asc += (a3 >= a2) ? (a3 + a2) : ((a3 - a2) * 12);
+  if (a3 === a2 && a3 > 0) score_asc += a3;
+  score_asc += (a2 >= a1) ? (a2 + a1) : ((a2 - a1) * 12);
+  if (a2 === a1 && a2 > 0) score_asc += a2;
+  score_asc += (a1 >= a0) ? (a1 + a0) : ((a1 - a0) * 12);
+  if (a1 === a0 && a1 > 0) score_asc += a1;
+  SCORE_MAP_ASC[i] = score_asc;
+}
+
+function heuristic_evaluate(board) {
+  let max_val = 0;
   for (let r = 0; r < 4; r++) {
     for (let c = 0; c < 4; c++) {
-      const v = board[r][c];
-      if (v === 0) { empty++; continue; }
-      const log_v = Math.log2(v);
-      if (v > max_val) max_val = v;
-
-      if (c < 3 && board[r][c + 1] !== 0)
-        smooth -= Math.abs(log_v - Math.log2(board[r][c + 1]));
-      if (r < 3 && board[r + 1][c] !== 0)
-        smooth -= Math.abs(log_v - Math.log2(board[r + 1][c]));
+      if (board[r][c] > max_val) max_val = board[r][c];
     }
   }
 
+  const max_exp = max_val > 0 ? Math.round(Math.log2(max_val)) : 0;
+  let row_table = SCORE_MAP_DESC;
+  let col_table = SCORE_MAP_DESC;
+
+  if (max_exp >= 7) {
+    if (board[0][0] === max_val) {
+      row_table = SCORE_MAP_DESC;
+      col_table = SCORE_MAP_DESC;
+    } else if (board[0][3] === max_val) {
+      row_table = SCORE_MAP_ASC;
+      col_table = SCORE_MAP_DESC;
+    } else if (board[3][0] === max_val) {
+      row_table = SCORE_MAP_DESC;
+      col_table = SCORE_MAP_ASC;
+    } else if (board[3][3] === max_val) {
+      row_table = SCORE_MAP_ASC;
+      col_table = SCORE_MAP_ASC;
+    }
+  }
+
+  let total_score = 0;
   for (let r = 0; r < 4; r++) {
-    let inc = 0, dec = 0;
-    for (let c = 0; c < 3; c++) {
-      const cur = board[r][c] === 0 ? 0 : Math.log2(board[r][c]);
-      const nxt = board[r][c + 1] === 0 ? 0 : Math.log2(board[r][c + 1]);
-      if (cur > nxt) dec += nxt - cur;
-      else inc += cur - nxt;
-    }
-    mono += Math.max(inc, dec);
+    const e0 = board[r][0] > 0 ? (Math.round(Math.log2(board[r][0])) & 0xF) : 0;
+    const e1 = board[r][1] > 0 ? (Math.round(Math.log2(board[r][1])) & 0xF) : 0;
+    const e2 = board[r][2] > 0 ? (Math.round(Math.log2(board[r][2])) & 0xF) : 0;
+    const e3 = board[r][3] > 0 ? (Math.round(Math.log2(board[r][3])) & 0xF) : 0;
+    const code = e0 | (e1 << 4) | (e2 << 8) | (e3 << 12);
+    total_score += row_table[code];
   }
+
   for (let c = 0; c < 4; c++) {
-    let inc = 0, dec = 0;
-    for (let r = 0; r < 3; r++) {
-      const cur = board[r][c] === 0 ? 0 : Math.log2(board[r][c]);
-      const nxt = board[r + 1][c] === 0 ? 0 : Math.log2(board[r + 1][c]);
-      if (cur > nxt) dec += nxt - cur;
-      else inc += cur - nxt;
-    }
-    mono += Math.max(inc, dec);
+    const e0 = board[0][c] > 0 ? (Math.round(Math.log2(board[0][c])) & 0xF) : 0;
+    const e1 = board[1][c] > 0 ? (Math.round(Math.log2(board[1][c])) & 0xF) : 0;
+    const e2 = board[2][c] > 0 ? (Math.round(Math.log2(board[2][c])) & 0xF) : 0;
+    const e3 = board[3][c] > 0 ? (Math.round(Math.log2(board[3][c])) & 0xF) : 0;
+    const code = e0 | (e1 << 4) | (e2 << 8) | (e3 << 12);
+    total_score += col_table[code];
   }
 
-  const corners = [board[0][0], board[0][3], board[3][0], board[3][3]];
-  const corner = corners.includes(max_val) ? Math.log2(max_val) : 0;
-
-  return (empty * 2.7) + (mono * 1.0) + (smooth * 0.1) + (corner * 1.0);
+  return total_score;
 }
 
 function evaluate_board(board) {
@@ -235,7 +277,7 @@ function expectimax_max(board, depth, prob) {
     has_valid_move = true;
 
     const penalty = (typeof check_anchor_violation === 'function' && check_anchor_violation(board, res.board)) ? -ANCHOR_PENALTY : 0;
-    const val = res.score + penalty + expectimax_chance(res.board, depth - 1, prob);
+    const val = penalty + expectimax_chance(res.board, depth - 1, prob);
     if (val > best) best = val;
   }
 
@@ -394,7 +436,7 @@ function ai_best_move(board) {
     const is_violation = (typeof check_anchor_violation === 'function') && check_anchor_violation(board, result.board);
     const penalty = is_violation ? -ANCHOR_PENALTY : 0;
 
-    const val = result.score + penalty + expectimax_chance(result.board, search_depth - 1, 1.0);
+    const val = penalty + expectimax_chance(result.board, search_depth - 1, 1.0);
     dir_values[dir] = val;
 
     if (val > best_val) {

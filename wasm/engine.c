@@ -8,7 +8,11 @@ typedef unsigned short uint16_t;
 typedef unsigned int uint32_t;
 typedef unsigned long long uint64_t;
 
+#ifdef __wasm__
 #define WASM_EXPORT(name) __attribute__((export_name(#name)))
+#else
+#define WASM_EXPORT(name) __declspec(dllexport)
+#endif
 
 #define ANCHOR_PENALTY 10000000.0f
 #define PROB_THRESHOLD 0.0001f
@@ -27,6 +31,12 @@ static uint16_t row_left_table[65536];
 static float row_score_table[65536];
 static uint16_t row_right_table[65536];
 static float row_right_score_table[65536];
+
+// monotonic score map tables (65,536 entries each)
+static float score_map_desc[65536];
+static float score_map_asc[65536];
+static const float *current_row_score_table = score_map_desc;
+static const float *current_col_score_table = score_map_desc;
 
 // zobrist hashing table (16 positions x 16 exponents)
 static uint64_t zobrist_table[16][16];
@@ -273,75 +283,61 @@ static inline int check_anchor_violation_bb(uint64_t old_b, uint64_t new_b) {
     return 0;
 }
 
-static inline float heuristic_evaluate_bb(uint64_t b) {
-    int empty = 0;
+static void set_search_orientation(uint64_t b) {
     int max_exp = 0;
-    float smooth = 0.0f;
-    float mono = 0.0f;
-
-    int exp_grid[4][4];
     uint64_t temp = b;
-    for (int r = 0; r < 4; r++) {
-        for (int c = 0; c < 4; c++) {
-            int exp = (int)(temp & 0xF);
-            exp_grid[r][c] = exp;
-            if (exp == 0) {
-                empty++;
-            } else {
-                if (exp > max_exp) max_exp = exp;
-            }
-            temp >>= 4;
+    for (int i = 0; i < 16; i++) {
+        int exp = (int)(temp & 0xF);
+        if (exp > max_exp) max_exp = exp;
+        temp >>= 4;
+    }
+
+    int c_tl = (int)(b & 0xF);                // [0][0]
+    int c_tr = (int)((b >> 12) & 0xF);        // [0][3]
+    int c_bl = (int)((b >> 48) & 0xF);        // [3][0]
+    int c_br = (int)((b >> 60) & 0xF);        // [3][3]
+
+    if (max_exp >= 7) { // 128 or higher: anchor established
+        if (c_tl == max_exp) {
+            current_row_score_table = score_map_desc;
+            current_col_score_table = score_map_desc;
+            return;
+        } else if (c_tr == max_exp) {
+            current_row_score_table = score_map_asc;
+            current_col_score_table = score_map_desc;
+            return;
+        } else if (c_bl == max_exp) {
+            current_row_score_table = score_map_desc;
+            current_col_score_table = score_map_asc;
+            return;
+        } else if (c_br == max_exp) {
+            current_row_score_table = score_map_asc;
+            current_col_score_table = score_map_asc;
+            return;
         }
     }
 
-    // smoothness
-    for (int r = 0; r < 4; r++) {
-        for (int c = 0; c < 4; c++) {
-            int cur = exp_grid[r][c];
-            if (cur == 0) continue;
-            if (c < 3 && exp_grid[r][c + 1] != 0) {
-                int diff = cur - exp_grid[r][c + 1];
-                smooth -= (diff < 0 ? -diff : diff);
-            }
-            if (r < 3 && exp_grid[r + 1][c] != 0) {
-                int diff = cur - exp_grid[r + 1][c];
-                smooth -= (diff < 0 ? -diff : diff);
-            }
-        }
-    }
+    // default: top-left corner
+    current_row_score_table = score_map_desc;
+    current_col_score_table = score_map_desc;
+}
 
-    // monotonicity rows
-    for (int r = 0; r < 4; r++) {
-        int inc = 0, dec = 0;
-        for (int c = 0; c < 3; c++) {
-            int cur = exp_grid[r][c];
-            int nxt = exp_grid[r][c + 1];
-            if (cur > nxt) dec += (nxt - cur);
-            else inc += (cur - nxt);
-        }
-        mono += (inc > dec ? inc : dec);
-    }
+static inline float score_map_evaluate_bb(uint64_t b) {
+    uint64_t tb = transpose(b);
+    uint16_t r0 = (uint16_t)(b & 0xFFFF);
+    uint16_t r1 = (uint16_t)((b >> 16) & 0xFFFF);
+    uint16_t r2 = (uint16_t)((b >> 32) & 0xFFFF);
+    uint16_t r3 = (uint16_t)((b >> 48) & 0xFFFF);
 
-    // monotonicity cols
-    for (int c = 0; c < 4; c++) {
-        int inc = 0, dec = 0;
-        for (int r = 0; r < 3; r++) {
-            int cur = exp_grid[r][c];
-            int nxt = exp_grid[r + 1][c];
-            if (cur > nxt) dec += (nxt - cur);
-            else inc += (cur - nxt);
-        }
-        mono += (inc > dec ? inc : dec);
-    }
+    uint16_t c0 = (uint16_t)(tb & 0xFFFF);
+    uint16_t c1 = (uint16_t)((tb >> 16) & 0xFFFF);
+    uint16_t c2 = (uint16_t)((tb >> 32) & 0xFFFF);
+    uint16_t c3 = (uint16_t)((tb >> 48) & 0xFFFF);
 
-    // corner bonus
-    int corner = 0;
-    if (exp_grid[0][0] == max_exp || exp_grid[0][3] == max_exp ||
-        exp_grid[3][0] == max_exp || exp_grid[3][3] == max_exp) {
-        corner = max_exp;
-    }
-
-    return ((float)empty * 2.7f) + (mono * 1.0f) + (smooth * 0.1f) + ((float)corner * 1.0f);
+    return current_row_score_table[r0] + current_row_score_table[r1] +
+           current_row_score_table[r2] + current_row_score_table[r3] +
+           current_col_score_table[c0] + current_col_score_table[c1] +
+           current_col_score_table[c2] + current_col_score_table[c3];
 }
 
 static inline float evaluate_board_bb(uint64_t b) {
@@ -364,7 +360,7 @@ static inline float evaluate_board_bb(uint64_t b) {
         }
         return score;
     }
-    return heuristic_evaluate_bb(b);
+    return score_map_evaluate_bb(b);
 }
 
 static inline int is_game_over_bb(uint64_t b) {
@@ -422,7 +418,7 @@ static float expectimax_max(uint64_t b, int depth, float prob) {
 
         has_valid_move = 1;
         float penalty = check_anchor_violation_bb(b, next_b) ? -ANCHOR_PENALTY : 0.0f;
-        float val = move_score + penalty + expectimax_chance(next_b, depth - 1, prob);
+        float val = penalty + expectimax_chance(next_b, depth - 1, prob);
         if (val > best) best = val;
     }
 
@@ -485,10 +481,50 @@ static float expectimax_chance(uint64_t b, int depth, float prob) {
     }
 }
 
+static inline int rank_tile_score(int r) {
+    return (r == 0) ? 0 : (r << r);
+}
+
+static void init_score_map_tables(void) {
+    for (uint32_t i = 0; i < 65536; i++) {
+        int c0 = i & 0xF;
+        int c1 = (i >> 4) & 0xF;
+        int c2 = (i >> 8) & 0xF;
+        int c3 = (i >> 12) & 0xF;
+
+        int a0 = rank_tile_score(c0);
+        int a1 = rank_tile_score(c1);
+        int a2 = rank_tile_score(c2);
+        int a3 = rank_tile_score(c3);
+
+        // descending (left to right)
+        int score_desc = a0;
+        score_desc += (a0 >= a1) ? (a0 + a1) : ((a0 - a1) * 12);
+        if (a0 == a1 && a0 > 0) score_desc += a0;
+        score_desc += (a1 >= a2) ? (a1 + a2) : ((a1 - a2) * 12);
+        if (a1 == a2 && a1 > 0) score_desc += a1;
+        score_desc += (a2 >= a3) ? (a2 + a3) : ((a2 - a3) * 12);
+        if (a2 == a3 && a2 > 0) score_desc += a2;
+        score_map_desc[i] = (float)score_desc;
+
+        // ascending (right to left)
+        int score_asc = a3;
+        score_asc += (a3 >= a2) ? (a3 + a2) : ((a3 - a2) * 12);
+        if (a3 == a2 && a3 > 0) score_asc += a3;
+        score_asc += (a2 >= a1) ? (a2 + a1) : ((a2 - a1) * 12);
+        if (a2 == a1 && a2 > 0) score_asc += a2;
+        score_asc += (a1 >= a0) ? (a1 + a0) : ((a1 - a0) * 12);
+        if (a1 == a0 && a1 > 0) score_asc += a1;
+        score_map_asc[i] = (float)score_asc;
+    }
+}
+
 // exported webassembly interface functions
 
 WASM_EXPORT(wasm_init)
 int wasm_init(void) {
+    init_score_map_tables();
+
     // initialize row tables
     for (uint32_t row = 0; row < 65536; row++) {
         int line[4];
@@ -561,6 +597,8 @@ int wasm_search(uint64_t board, int depth) {
         wasm_init();
     }
 
+    set_search_orientation(board);
+
     nodes_evaluated = 0;
     tt_hits_count = 0;
     current_search_age = (uint8_t)((current_search_age + 1) & 0xFF);
@@ -577,7 +615,7 @@ int wasm_search(uint64_t board, int depth) {
         }
 
         float penalty = check_anchor_violation_bb(board, next_b) ? -ANCHOR_PENALTY : 0.0f;
-        float val = move_score + penalty + expectimax_chance(next_b, depth - 1, 1.0f);
+        float val = penalty + expectimax_chance(next_b, depth - 1, 1.0f);
         last_dir_values[dir] = val;
 
         if (val > best_val) {
@@ -587,6 +625,14 @@ int wasm_search(uint64_t board, int depth) {
     }
 
     return last_best_dir;
+}
+
+WASM_EXPORT(wasm_evaluate_board)
+float wasm_evaluate_board(uint32_t board_low, uint32_t board_high) {
+    if (!is_initialized) wasm_init();
+    uint64_t b = ((uint64_t)board_high << 32) | (uint64_t)board_low;
+    set_search_orientation(b);
+    return evaluate_board_bb(b);
 }
 
 WASM_EXPORT(wasm_search_parts)
@@ -618,11 +664,15 @@ int wasm_get_best_dir(void) {
 
 WASM_EXPORT(wasm_init_tuple_weights)
 int wasm_init_tuple_weights(void) {
+#ifdef __wasm__
     int old_pages = __builtin_wasm_memory_grow(0, 256);
     if (old_pages < 0) return 0;
     tuple_weights = (float*)((uint32_t)old_pages * 65536);
     use_tuple = 1;
     return (int)((uint32_t)old_pages * 65536);
+#else
+    return 0;
+#endif
 }
 
 WASM_EXPORT(wasm_set_use_tuple)
