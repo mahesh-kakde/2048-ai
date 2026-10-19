@@ -133,3 +133,58 @@ function bitboard_get_tile(bb, r, c) {
   const exp = Number((bb >> shift) & 0xFn);
   return exp > 0 ? (1 << exp) : 0;
 }
+
+// checks if a move displaces or disrupts an established corner anchor tile
+function check_anchor_violation(old_board, new_board) {
+  let max_val = 0;
+  for (let r = 0; r < 4; r++) {
+    for (let c = 0; c < 4; c++) {
+      if (old_board[r][c] > max_val) max_val = old_board[r][c];
+    }
+  }
+
+  // anchor protection activates once an anchor tile (>= 128) is established
+  if (max_val < 128) return false;
+
+  const corners = [
+    [0, 0], [0, 3], [3, 0], [3, 3]
+  ];
+
+  let corner_anchor = null;
+  for (let i = 0; i < 4; i++) {
+    const [r, c] = corners[i];
+    if (old_board[r][c] === max_val) {
+      corner_anchor = [r, c];
+      break;
+    }
+  }
+
+  // no established corner anchor yet
+  if (!corner_anchor) return false;
+
+  const [cr, cc] = corner_anchor;
+
+  // primary invariant: corner tile must never be vacated or reduced
+  if (new_board[cr][cc] < max_val) {
+    return true;
+  }
+
+  // secondary invariant: protect adjacent perimeter edges from being emptied
+  if (max_val >= 512) {
+    const r_step = cr === 0 ? 1 : -1;
+    const c_step = cc === 0 ? 1 : -1;
+
+    const adj_c = old_board[cr][cc + c_step];
+    const adj_r = old_board[cr + r_step][cc];
+
+    // if an adjacent tile has substantial rank (>= max_val / 4), forbid creating a zero hole
+    if (adj_c >= max_val / 4 && new_board[cr][cc + c_step] === 0) {
+      return true;
+    }
+    if (adj_r >= max_val / 4 && new_board[cr + r_step][cc] === 0) {
+      return true;
+    }
+  }
+
+  return false;
+}

@@ -137,6 +137,8 @@ function get_search_depth(board) {
   return empty <= 4 ? 4 : 3;
 }
 
+const ANCHOR_PENALTY = 1e7;
+
 function expectimax_max(board, depth, prob) {
   if (depth <= 0 || is_game_over(board)) {
     nodes_evaluated++;
@@ -159,7 +161,8 @@ function expectimax_max(board, depth, prob) {
     if (!res.moved) continue;
     has_valid_move = true;
 
-    const val = res.score + expectimax_chance(res.board, depth - 1, prob);
+    const penalty = (typeof check_anchor_violation === 'function' && check_anchor_violation(board, res.board)) ? -ANCHOR_PENALTY : 0;
+    const val = res.score + penalty + expectimax_chance(res.board, depth - 1, prob);
     if (val > best) best = val;
   }
 
@@ -236,7 +239,10 @@ function ai_best_move(board) {
       continue;
     }
 
-    const val = result.score + expectimax_chance(result.board, search_depth - 1, 1.0);
+    const is_violation = (typeof check_anchor_violation === 'function') && check_anchor_violation(board, result.board);
+    const penalty = is_violation ? -ANCHOR_PENALTY : 0;
+
+    const val = result.score + penalty + expectimax_chance(result.board, search_depth - 1, 1.0);
     dir_values[dir] = val;
 
     if (val > best_val) {

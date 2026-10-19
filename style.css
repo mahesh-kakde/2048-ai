@@ -384,6 +384,15 @@ body {
   opacity: 0.35;
 }
 
+.hud-dir-danger {
+  opacity: 0.65;
+  border-color: rgba(180, 20, 50, 0.45);
+}
+
+.hud-dir-danger .hud-val {
+  color: #ff8a8a !important;
+}
+
 .hud-label {
   font-size: 0.62rem;
   font-weight: 500;

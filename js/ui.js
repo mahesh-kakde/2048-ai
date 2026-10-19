@@ -110,7 +110,7 @@ const UI = (() => {
       for (let d = 0; d < 4; d++) {
         const item = hud_dirs[d];
         if (!item || !item.el) continue;
-        item.el.classList.remove('hud-dir-best', 'hud-dir-invalid');
+        item.el.classList.remove('hud-dir-best', 'hud-dir-invalid', 'hud-dir-danger');
         if (item.val_el) item.val_el.textContent = '—';
       }
       return;
@@ -123,12 +123,16 @@ const UI = (() => {
       const item = hud_dirs[d];
       if (!item || !item.el) continue;
       const v = vals[d];
+      const is_danger = typeof v === 'number' && v < -1e6;
       item.el.classList.toggle('hud-dir-best', d === best_d);
       item.el.classList.toggle('hud-dir-invalid', v === null || v === undefined);
+      item.el.classList.toggle('hud-dir-danger', is_danger);
 
       if (item.val_el) {
         if (v === null || v === undefined) {
           item.val_el.textContent = 'blocked';
+        } else if (is_danger) {
+          item.val_el.textContent = 'danger';
         } else {
           item.val_el.textContent = Math.round(v).toLocaleString();
         }
@@ -143,7 +147,7 @@ const UI = (() => {
       for (let d = 0; d < 4; d++) {
         const item = hud_dirs[d];
         if (!item || !item.el) continue;
-        item.el.classList.remove('hud-dir-best', 'hud-dir-invalid');
+        item.el.classList.remove('hud-dir-best', 'hud-dir-invalid', 'hud-dir-danger');
         if (item.val_el) item.val_el.textContent = '—';
       }
     }
