@@ -62,21 +62,34 @@
     </div>
 
     <div class="decision-hud" id="decision-hud">
-      <div class="hud-dir" data-dir="0" id="hud-dir-up">
-        <span class="hud-label">up</span>
-        <span class="hud-val" id="hud-val-up">&mdash;</span>
+      <div class="hud-meta">
+        <div class="hud-mode-wrap">
+          <span class="hud-mode-dot" id="hud-mode-dot"></span>
+          <span class="hud-mode" id="hud-mode">ai lookahead</span>
+        </div>
+        <span class="hud-detail" id="hud-detail">&mdash;</span>
       </div>
-      <div class="hud-dir" data-dir="1" id="hud-dir-right">
-        <span class="hud-label">right</span>
-        <span class="hud-val" id="hud-val-right">&mdash;</span>
-      </div>
-      <div class="hud-dir" data-dir="2" id="hud-dir-down">
-        <span class="hud-label">down</span>
-        <span class="hud-val" id="hud-val-down">&mdash;</span>
-      </div>
-      <div class="hud-dir" data-dir="3" id="hud-dir-left">
-        <span class="hud-label">left</span>
-        <span class="hud-val" id="hud-val-left">&mdash;</span>
+      <div class="hud-grid">
+        <div class="hud-dir" data-dir="0" id="hud-dir-up">
+          <span class="hud-label">up</span>
+          <span class="hud-val" id="hud-val-up">&mdash;</span>
+          <span class="hud-prob" id="hud-prob-up"></span>
+        </div>
+        <div class="hud-dir" data-dir="1" id="hud-dir-right">
+          <span class="hud-label">right</span>
+          <span class="hud-val" id="hud-val-right">&mdash;</span>
+          <span class="hud-prob" id="hud-prob-right"></span>
+        </div>
+        <div class="hud-dir" data-dir="2" id="hud-dir-down">
+          <span class="hud-label">down</span>
+          <span class="hud-val" id="hud-val-down">&mdash;</span>
+          <span class="hud-prob" id="hud-prob-down"></span>
+        </div>
+        <div class="hud-dir" data-dir="3" id="hud-dir-left">
+          <span class="hud-label">left</span>
+          <span class="hud-val" id="hud-val-left">&mdash;</span>
+          <span class="hud-prob" id="hud-prob-left"></span>
+        </div>
       </div>
     </div>
 

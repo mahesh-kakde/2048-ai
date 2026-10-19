@@ -28,6 +28,7 @@
   --tile-8192: #4a2840;
   --tile-16384: #232a38;
   --tile-32768: #500f1c;
+  --tile-65536: #0a1120;
   --tile-super: #1c1b18;
 
   --tile-text-dark: #776e65;
@@ -284,6 +285,38 @@ body {
   100% { transform: rotate(360deg) translate(4px); }
 }
 
+/* understated 65,536 celestial obsidian styling with calm ethereal pulse and platinum aura */
+.tile[data-value="65536"],
+.tile-65536 {
+  background: var(--tile-65536);
+  font-size: 0.82rem;
+  letter-spacing: -0.5px;
+  color: #f0f6fc;
+  border: 1px solid rgba(186, 230, 253, 0.65);
+  animation: breathe-65k 4s ease-in-out infinite;
+  position: absolute;
+  overflow: hidden;
+}
+
+.tile[data-value="65536"]::after,
+.tile-65536::after {
+  content: '';
+  position: absolute;
+  inset: -60%;
+  background: radial-gradient(circle, rgba(186, 230, 253, 0.18) 10%, transparent 65%);
+  animation: slow-particle-drift 8s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes breathe-65k {
+  0%, 100% {
+    box-shadow: 0 0 12px rgba(14, 165, 233, 0.35), 0 0 24px rgba(224, 242, 254, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 22px rgba(14, 165, 233, 0.6), 0 0 36px rgba(224, 242, 254, 0.35);
+  }
+}
+
 .tile-super {
   background: var(--tile-super) !important;
   color: var(--tile-text-light) !important;
@@ -349,12 +382,80 @@ body {
 .decision-hud {
   display: none;
   width: 100%;
-  grid-template-columns: repeat(4, 1fr);
+  flex-direction: column;
   gap: 6px;
 }
 
 .decision-hud.active {
+  display: flex;
+}
+
+.hud-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 2px;
+}
+
+.hud-mode-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hud-mode-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #8c7f74;
+  box-shadow: 0 0 4px rgba(140, 127, 116, 0.4);
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.decision-hud.hud-mode-tablebase .hud-mode-dot {
+  background: #10b981;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.8);
+}
+
+.decision-hud.hud-mode-wasm .hud-mode-dot {
+  background: #0ea5e9;
+  box-shadow: 0 0 8px rgba(14, 165, 233, 0.8);
+}
+
+.decision-hud.hud-mode-js .hud-mode-dot {
+  background: #f59e0b;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.8);
+}
+
+.hud-mode {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.65rem;
+  letter-spacing: 0.5px;
+  color: var(--text);
+  text-transform: lowercase;
+}
+
+.decision-hud.hud-mode-tablebase .hud-mode {
+  color: #047857;
+}
+
+.decision-hud.hud-mode-wasm .hud-mode {
+  color: #0369a1;
+}
+
+.hud-detail {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--text-light);
+  letter-spacing: 0.2px;
+  text-transform: lowercase;
+}
+
+.hud-grid {
   display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
 }
 
 .hud-dir {
@@ -364,20 +465,40 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 1px;
   transition: all 0.15s ease;
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .hud-dir-best {
-  background: #cbbba8;
-  border-color: #8c7f74;
+  background: #8f7a66;
+  border-color: #695a4c;
+  box-shadow: 0 2px 6px rgba(119, 110, 101, 0.25);
 }
 
 .hud-dir-best .hud-label,
-.hud-dir-best .hud-val {
+.hud-dir-best .hud-val,
+.hud-dir-best .hud-prob {
   color: #fff !important;
   font-weight: 700;
+}
+
+.hud-dir-tablebase {
+  background: #1b4d3e !important;
+  border-color: #34d399 !important;
+  box-shadow: 0 0 10px rgba(52, 211, 153, 0.35);
+}
+
+.hud-dir-tablebase .hud-label {
+  color: #a7f3d0 !important;
+}
+
+.hud-dir-tablebase .hud-val {
+  color: #d1fae5 !important;
+}
+
+.hud-dir-tablebase .hud-prob {
+  color: #6ee7b7 !important;
 }
 
 .hud-dir-invalid {
@@ -385,11 +506,12 @@ body {
 }
 
 .hud-dir-danger {
-  opacity: 0.65;
+  opacity: 0.75;
   border-color: rgba(180, 20, 50, 0.45);
 }
 
-.hud-dir-danger .hud-val {
+.hud-dir-danger .hud-val,
+.hud-dir-danger .hud-prob {
   color: #ff8a8a !important;
 }
 
@@ -407,6 +529,14 @@ body {
   font-weight: 700;
   color: #fff;
   white-space: nowrap;
+}
+
+.hud-prob {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: rgba(255, 255, 255, 0.75);
+  white-space: nowrap;
+  letter-spacing: 0.4px;
 }
 
 /* -- buttons -- */
@@ -655,6 +785,17 @@ body {
 
   .hud-val {
     font-size: 0.65rem;
+  }
+
+  .hud-prob {
+    font-size: 0.52rem;
+  }
+
+  .tile[data-value="32768"],
+  .tile[data-value="65536"],
+  .tile-65536 {
+    font-size: 0.72rem;
+    letter-spacing: -0.6px;
   }
 
   .score-card-images {

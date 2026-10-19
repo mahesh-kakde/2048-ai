@@ -192,7 +192,7 @@ const Game = (() => {
           UI.update_latency(stats.time_ms);
         }
       }
-      if (typeof UI.update_decision_hud === 'function') UI.update_decision_hud(stats.directional);
+      if (typeof UI.update_decision_hud === 'function') UI.update_decision_hud(stats.directional, stats);
     }
 
     do_move(dir);
