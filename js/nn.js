@@ -127,6 +127,10 @@ const NN = (() => {
     is_fine_tuned = is_local;
     window.heuristic_evaluate = tuple_evaluate;
 
+    if (typeof AI !== 'undefined' && AI.sync_tuple_weights) {
+      AI.sync_tuple_weights(tuple_weights);
+    }
+
     if (is_local) {
       const count = localStorage.getItem(LS_GAMES_KEY) || '1';
       set_status(`v4 hybrid engine active (tablebase + local learned: ${count} games)`);

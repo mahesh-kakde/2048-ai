@@ -78,6 +78,79 @@ function reset_transposition_table() {
   tt_hits_count = 0;
 }
 
+let wasm_exports = null;
+let wasm_ready = false;
+let wasm_loading = false;
+
+function sync_tuple_weights(weights) {
+  if (!wasm_ready || !wasm_exports || !wasm_exports.wasm_init_tuple_weights) return false;
+  if (!weights || !(weights instanceof Float32Array)) return false;
+  try {
+    const offset = wasm_exports.wasm_init_tuple_weights();
+    if (offset > 0 && wasm_exports.memory) {
+      const wasm_mem = new Float32Array(wasm_exports.memory.buffer, offset, weights.length);
+      wasm_mem.set(weights);
+      if (wasm_exports.wasm_set_use_tuple) {
+        wasm_exports.wasm_set_use_tuple(1);
+      }
+      return true;
+    }
+  } catch (err) {
+    console.warn('failed to sync tuple weights to wasm:', err);
+  }
+  return false;
+}
+
+async function init_wasm() {
+  if (wasm_ready || wasm_loading) return;
+  wasm_loading = true;
+  try {
+    const response = await fetch('wasm/engine.wasm');
+    if (!response.ok) throw new Error(`wasm fetch failed: ${response.status}`);
+    const bytes = await response.arrayBuffer();
+    const { instance } = await WebAssembly.instantiate(bytes, {});
+    wasm_exports = instance.exports;
+    if (wasm_exports.wasm_init) {
+      wasm_exports.wasm_init();
+    }
+    wasm_ready = true;
+    if (typeof NN !== 'undefined' && NN.get_weights && NN.get_weights()) {
+      sync_tuple_weights(NN.get_weights());
+    }
+  } catch (err) {
+    console.warn('wasm search engine unavailable, using javascript fallback:', err);
+    wasm_ready = false;
+  } finally {
+    wasm_loading = false;
+  }
+}
+
+if (typeof window !== 'undefined') {
+  init_wasm();
+}
+
+function get_search_depth_wasm(board) {
+  const empty = get_empty_cells(board).length;
+  return empty <= 4 ? 6 : 5;
+}
+
+function encode_board_bitboard(board) {
+  if (typeof board_to_bitboard === 'function') {
+    return board_to_bitboard(board);
+  }
+  let bb = 0n;
+  let shift = 0n;
+  for (let r = 0; r < 4; r++) {
+    for (let c = 0; c < 4; c++) {
+      const v = board[r][c];
+      const exp = v > 0 ? BigInt(Math.round(Math.log2(v)) & 0xF) : 0n;
+      bb |= (exp << shift);
+      shift += 4n;
+    }
+  }
+  return bb;
+}
+
 function heuristic_evaluate(board) {
   let empty = 0;
   let max_val = 0;
@@ -264,7 +337,46 @@ function ai_best_move(board) {
     }
   }
 
-  // 2. fallback to expectimax search during open-board phases
+  // 2. wasm expectimax search (depth 5-6)
+  if (wasm_ready && wasm_exports) {
+    const search_depth = get_search_depth_wasm(board);
+    last_search_depth = search_depth;
+    const bb = encode_board_bitboard(board);
+
+    let best_dir = -1;
+    try {
+      best_dir = wasm_exports.wasm_search(bb, search_depth);
+    } catch (_) {
+      const low = Number(bb & 0xFFFFFFFFn) >>> 0;
+      const high = Number((bb >> 32n) & 0xFFFFFFFFn) >>> 0;
+      best_dir = wasm_exports.wasm_search_parts(low, high, search_depth);
+    }
+
+    nodes_evaluated = wasm_exports.wasm_get_nodes ? wasm_exports.wasm_get_nodes() : 0;
+    tt_hits_count = wasm_exports.wasm_get_tt_hits ? wasm_exports.wasm_get_tt_hits() : 0;
+
+    const dir_values = [null, null, null, null];
+    for (let d = 0; d < 4; d++) {
+      const v = wasm_exports.wasm_get_dir_val ? wasm_exports.wasm_get_dir_val(d) : -1e9;
+      dir_values[d] = v < -1e8 ? null : v;
+    }
+
+    last_directional_telemetry = {
+      up: dir_values[0],
+      right: dir_values[1],
+      down: dir_values[2],
+      left: dir_values[3],
+      best_dir: best_dir,
+      raw: dir_values,
+      source: 'wasm-expectimax'
+    };
+
+    const t1 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+    last_move_time_ms = t1 - t0;
+    return best_dir;
+  }
+
+  // 3. fallback to expectimax search during open-board phases
   const search_depth = get_search_depth(board);
   last_search_depth = search_depth;
 
@@ -318,5 +430,19 @@ function get_last_search_stats() {
     tt_hits: tt_hits_count,
     directional: last_directional_telemetry,
     source: last_directional_telemetry.source || 'expectimax'
+  };
+}
+
+if (typeof window !== 'undefined') {
+  window.ai_best_move = ai_best_move;
+  window.get_directional_values = get_directional_values;
+  window.get_last_search_stats = get_last_search_stats;
+  window.init_wasm = init_wasm;
+  window.AI = {
+    best_move: ai_best_move,
+    get_stats: get_last_search_stats,
+    is_wasm_ready: () => wasm_ready,
+    init_wasm,
+    sync_tuple_weights
   };
 }
