@@ -79,7 +79,7 @@ board evaluations at leaf nodes are computed using **16-bit monotonic score maps
 | model v1 | 19,800+ | ~18,200 | 60,000+ | 4096 | 34.0% | ~5,000ms+ | tensorflow.js mlp (548k states) |
 | model v2 | 2,098 | 1,496 | 7,232 | 512 | 0.0% | ~12-25ms | pure js matrix mlp (47m states) |
 | model v3 | 38,406 | 36,436 | 73,128 | 4096 | 90.0% | ~5.6ms | 32-symmetric n-tuple (100k games) |
-| model v4 | in progress | in progress | in progress | 16384+ | 100.0% | ~1.5ms | wasm bitboard expectimax + 16-bit score maps |
+| model v4 | 128,849 | 125,514 | 361,092 | 16384 | 99.0% | ~23.7ms | wasm bitboard expectimax + 16-bit score maps |
 
 ## live demo
 

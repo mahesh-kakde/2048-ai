@@ -82,14 +82,50 @@ symmetric n-tuple network with td reinforcement learning and expectimax search:
 
 ---
 
+## model v4
+
+compiled webassembly bitboard expectimax with 16-bit monotonic row/column score maps:
+- architecture: 64-bit integer bitboard representation (4 bits per cell exponent), 16-bit precomputed slide and score map lookup tables (65,536 entries each)
+- evaluation function: positional 16-bit monotonic score maps combining exponential tile scores (r << r), monotonic ordering gradients with 12x break penalties, and merge pair bonuses
+- invariants: hard perimeter anchor protection locking highest tiles to top-left corner
+- search strategy: depth 5-6 expectimax search (depth 5 for open boards > 4 empty cells, depth 6 for tight boards <= 4 empty cells), 64-bit zobrist transposition caching (131,072 entries), and selective chance-node pruning (threshold 0.0001)
+- continuous evaluation (100 games):
+  - games played: 100
+  - mean score: 128,849
+  - median score: 125,514
+  - max score: 361,092
+  - min score: 16,016
+  - score standard deviation: 70,440
+  - average moves per game: 5,329
+  - average move latency: 23.74ms / move
+  - max tile reached: 16,384 (13 games)
+  - tile distribution:
+    - 1024: 1 (1.0%)
+    - 2048: 8 (8.0%)
+    - 4096: 30 (30.0%)
+    - 8192: 48 (48.0%)
+    - 16384: 13 (13.0%)
+  - 2048+ achievement rate: 99.0% (99 out of 100 games)
+  - 4096+ achievement rate: 91.0% (91 out of 100 games)
+  - 8192+ achievement rate: 61.0% (61 out of 100 games)
+  - 16384+ achievement rate: 13.0% (13 out of 100 games)
+- developer benchmark comparison:
+  - developer personal high score: 144,868 points (8,192 tile achieved in 4,913 moves)
+  - v4 peak score: 361,092 points (2.49x developer record, 16,384 tile)
+  - v4 mean score: 128,849 points (3.35x improvement over v3's 38,406 points, 61.4x over v2)
+  - 8k+ rate: 61.0% of all games reached 8,192 or 16,384 tiles
+
+---
+
 ## comparisons
 
-| version | avg score | median score | max score | max tile reached | 2048+ rate | move latency | model architecture |
-|---------|-----------|--------------|-----------|------------------|------------|--------------|-------------------|
-| heuristic only | 19,815 | ~18,500 | 62,144 | 4096 | 35.4% | ~30ms | hand-crafted heuristic rules |
-| model v1 | 19,800+ | ~18,200 | 60,000+ | 4096 | 34.0% | ~5,000ms+ | tensorflow.js mlp (548k states) |
-| model v2 | 2,098 | 1,496 | 7,232 | 512 | 0.0% | ~12-25ms | pure js matrix mlp (47m states) |
-| model v3 | 38,406 | 36,436 | 73,128 | 4096 | 90.0% | ~5.6ms | 32-symmetric n-tuple (100k games) |
+| version | avg score | median score | max score | max tile reached | 2048+ rate | 8192+ rate | 16384+ rate | move latency | model architecture |
+|---|---|---|---|---|---|---|---|---|---|
+| heuristic only | 19,815 | ~18,500 | 62,144 | 4096 | 35.4% | 0.0% | 0.0% | ~30ms | hand-crafted heuristic rules |
+| model v1 | 19,800+ | ~18,200 | 60,000+ | 4096 | 34.0% | 0.0% | 0.0% | ~5,000ms+ | tensorflow.js mlp (548k states) |
+| model v2 | 2,098 | 1,496 | 7,232 | 512 | 0.0% | 0.0% | 0.0% | ~12-25ms | pure js matrix mlp (47m states) |
+| model v3 | 38,406 | 36,436 | 73,128 | 4096 | 90.0% | 0.0% | 0.0% | ~5.6ms | 32-symmetric n-tuple (100k games) |
+| model v4 | 128,849 | 125,514 | 361,092 | 16384 | 99.0% | 61.0% | 13.0% | ~23.7ms | wasm bitboard expectimax + 16-bit score maps |
 
 ---
 
