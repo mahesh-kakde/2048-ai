@@ -354,7 +354,7 @@ function ai_best_move(board) {
     return best_dir;
   }
 
-  // 3. fallback to expectimax search during open-board phases
+  // fallback to javascript expectimax search
   const search_depth = get_search_depth(board);
   last_search_depth = search_depth;
 

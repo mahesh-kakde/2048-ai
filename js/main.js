@@ -155,10 +155,6 @@ const Game = (() => {
     ai_btn.textContent = ai_playing ? 'stop ai' : 'let ai play';
     if (!ai_playing) {
       if (typeof UI.update_latency === 'function') UI.update_latency(null);
-      if (typeof UI.update_decision_hud === 'function') UI.update_decision_hud(null);
-      if (typeof UI.show_decision_hud === 'function') UI.show_decision_hud(false);
-    } else {
-      if (typeof UI.show_decision_hud === 'function') UI.show_decision_hud(true);
     }
 
     if (ai_playing) ai_step();
@@ -169,8 +165,6 @@ const Game = (() => {
       ai_playing = false;
       ai_btn.textContent = 'let ai play';
       if (typeof UI.update_latency === 'function') UI.update_latency(null);
-      if (typeof UI.update_decision_hud === 'function') UI.update_decision_hud(null);
-      if (typeof UI.show_decision_hud === 'function') UI.show_decision_hud(false);
       return;
     }
 
