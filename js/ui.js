@@ -166,15 +166,13 @@ const UI = (() => {
 
     if (hud_detail_el) {
       if (is_tablebase) {
-        hud_detail_el.textContent = 'exact corridor • <0.1 ms';
+        hud_detail_el.textContent = 'exact corridor';
       } else {
         const depth_val = telemetry.depth || (stats && stats.depth) || null;
         const depth_str = depth_val ? `depth ${depth_val}` : '';
         const nodes_val = telemetry.nodes || (stats && stats.nodes) || 0;
         const nodes_str = nodes_val > 0 ? (nodes_val >= 1000 ? `${(nodes_val / 1000).toFixed(1)}k nodes` : `${nodes_val} nodes`) : '';
-        const time_val = stats && typeof stats.time_ms === 'number' ? stats.time_ms : null;
-        const time_str = time_val !== null ? (time_val < 1 ? `${time_val.toFixed(1)} ms` : `${Math.round(time_val)} ms`) : '';
-        hud_detail_el.textContent = [depth_str, nodes_str, time_str].filter(Boolean).join(' • ') || 'active';
+        hud_detail_el.textContent = [depth_str, nodes_str].filter(Boolean).join(' • ') || 'active';
       }
     }
 
@@ -258,20 +256,7 @@ const UI = (() => {
   }
 
   function show_decision_hud(show) {
-    if (!hud_el) return;
-    hud_el.classList.toggle('active', !!show);
-    if (!show) {
-      hud_el.classList.remove('hud-mode-tablebase', 'hud-mode-wasm', 'hud-mode-js');
-      if (hud_mode_el) hud_mode_el.textContent = 'ai standby';
-      if (hud_detail_el) hud_detail_el.textContent = '—';
-      for (let d = 0; d < 4; d++) {
-        const item = hud_dirs[d];
-        if (!item || !item.el) continue;
-        item.el.classList.remove('hud-dir-best', 'hud-dir-invalid', 'hud-dir-danger', 'hud-dir-tablebase');
-        if (item.val_el) item.val_el.textContent = '—';
-        if (item.prob_el) item.prob_el.textContent = '';
-      }
-    }
+    // hud is locked in place permanently to prevent layout shifting
   }
 
   return {

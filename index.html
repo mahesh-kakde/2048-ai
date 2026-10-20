@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="2048 with an ai agent powered by expectimax search and an n-tuple network evaluator. runs fully in the browser.">
+  <meta name="description" content="2048 with an ai agent powered by compiled webassembly expectimax search and 16-bit monotonic evaluation. runs fully in the browser.">
   <meta name="theme-color" content="#faf8f0">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='5' fill='%23edc22e'/><text x='16' y='22' text-anchor='middle' font-family='monospace' font-weight='700' font-size='18' fill='%23776e65'>2k</text></svg>">
   <title>2048 ai</title>
@@ -64,8 +64,7 @@
     <div class="decision-hud" id="decision-hud">
       <div class="hud-meta">
         <div class="hud-mode-wrap">
-          <span class="hud-mode-dot" id="hud-mode-dot"></span>
-          <span class="hud-mode" id="hud-mode">ai lookahead</span>
+          <span class="hud-mode" id="hud-mode">ai standby</span>
         </div>
         <span class="hud-detail" id="hud-detail">&mdash;</span>
       </div>
@@ -99,11 +98,15 @@
       <button class="btn" id="new-game-btn">new game</button>
     </div>
 
-    <div class="stats" id="stats">
-      <span class="stats-text" id="stats-text"></span>
-    </div>
-
   </div>
+
+  <footer class="footer">
+    <span>built by <a href="https://github.com/mahesh-kakde" target="_blank" rel="noopener">mahesh kakde</a></span>
+    <span class="footer-sep">&middot;</span>
+    <span class="version-tag">v4.0.0</span>
+    <span class="footer-sep">&middot;</span>
+    <a href="https://github.com/mahesh-kakde/2048-ai" target="_blank" rel="noopener">github</a>
+  </footer>
 
   <div class="modal-overlay" id="modal-overlay">
     <div class="modal" id="modal">
@@ -129,7 +132,7 @@
           </figure>
         </div>
 
-        <p>the benchmark to reach: <strong>144,868 points</strong>. in version 3, my goal is consistent 8k games and reaching 16,384 and 32,768 tiles.</p>
+        <p>the benchmark to reach: <strong>144,868 points</strong>. in version 4, my goal is consistent 8k+ games and reaching 16,384, 32,768, and 65,536 tiles.</p>
       </div>
 
       <div class="modal-tab-content" id="tab-technical">
@@ -138,24 +141,22 @@
         <h3>engine evolution</h3>
         <p><strong>version 1:</strong> expectimax lookahead backed by a tensorflow.js neural network board evaluator. in-browser inference was heavy (&gt;100ms per move), bottlenecking search tree depth.</p>
         <p><strong>version 2:</strong> replaced tensorflow.js with a pure javascript matrix engine (&lt;0.03ms). but performance dropped to ~512 average tile -- scalar mse regression lost spatial board topology, and shallow depth 2 lookahead was vulnerable to tactical traps.</p>
-        <p><strong>version 3 (current):</strong> <strong>n-tuple network</strong> trained via <strong>temporal difference learning (td)</strong> across 100,000 self-play games on kaggle:</p>
+        <p><strong>version 3:</strong> <strong>n-tuple network</strong> trained via <strong>temporal difference learning (td)</strong> across 100,000 self-play games on kaggle.</p>
+        <p><strong>version 4 (current):</strong> <strong>compiled webassembly bitboard expectimax</strong> with 16-bit monotonic row/column score maps, hard perimeter anchor invariants, and 64-bit zobrist transposition caching (&gt;10,000 nodes/sec in-browser lookahead, reaching 16,384, 32,768, and 65,536 tiles).</p>
         
         <ul class="modal-list">
-          <li><strong>4 base 5-tuples</strong> capturing corner clusters, monotonicity lines, and l-corridors.</li>
-          <li><strong>8 d4 dihedral symmetries</strong> expanding into 32 lookup tables (4,194,304 float32 weights, 16.77 mb binary table).</li>
-          <li><strong>fast pure javascript inference</strong> (0.5&micro;s per board, ~2,000,000 evals/sec).</li>
-          <li><strong>64-bit zobrist transposition table</strong> (131,072 entries) caching deterministic subtrees with ~30% hit rates.</li>
-          <li><strong>depth 3-4 expectimax</strong> with selective chance pruning (&lt;25ms real-time latency).</li>
-          <li><strong>directional decision telemetry</strong> exposing real-time expected values (up, right, down, left).</li>
+          <li><strong>compiled webassembly (c)</strong>: sub-millisecond bitboard search executing millions of evaluations per second in-browser.</li>
+          <li><strong>16-bit monotonic score maps</strong>: 65,536-entry precomputed row and column evaluation tables rewarding monotonic gradients and merge pairs.</li>
+          <li><strong>hard perimeter anchor invariants</strong>: topological protection locking the highest tile to the top-left corner.</li>
+          <li><strong>64-bit zobrist transposition table</strong>: 131,072-entry cache avoiding redundant search tree exploration.</li>
+          <li><strong>depth 5-6 expectimax</strong>: deep forward lookahead with selective chance pruning (&lt;10ms latency).</li>
+          <li><strong>real-time decision telemetry</strong>: live softmax probability distribution and lookahead stats.</li>
         </ul>
 
-        <h3>local learning</h3>
-        <p>after each game, client-side td updates fine-tune the tuple weights directly in your browser. updated tables are persisted into indexeddb.</p>
-
         <h3>built with</h3>
-        <p>vanilla javascript, indexeddb, python / numpy (trained on kaggle).</p>
+        <p>webassembly (c), vanilla javascript, html5/css3.</p>
 
-        <p><a href="https://github.com/mahesh-kakde/2048-nn" target="_blank" rel="noopener">github &rarr;</a></p>
+        <p><a href="https://github.com/mahesh-kakde/2048-ai" target="_blank" rel="noopener">github &rarr;</a></p>
       </div>
 
     </div>
