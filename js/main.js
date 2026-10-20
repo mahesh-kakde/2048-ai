@@ -44,7 +44,7 @@ const Game = (() => {
   }
 
   function do_move(direction) {
-    if (game_over || input_locked) return;
+    if (game_over || (!ai_playing && input_locked)) return;
 
     const old_board = clone(board);
     const result = move(board, direction);
@@ -52,7 +52,10 @@ const Game = (() => {
 
     if (typeof NN !== 'undefined') NN.record_state(old_board, score, result.board, result.score);
 
-    input_locked = true;
+    if (!ai_playing) {
+      input_locked = true;
+      setTimeout(() => { input_locked = false; }, 150);
+    }
 
     const merged = find_merged_positions(old_board, result.board, direction);
     board = result.board;
@@ -77,8 +80,6 @@ const Game = (() => {
         if (typeof NN !== 'undefined') NN.on_game_over(score);
       }, 300);
     }
-
-    setTimeout(() => { input_locked = false; }, 150);
   }
 
   function new_game() {
