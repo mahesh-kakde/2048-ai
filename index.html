@@ -101,7 +101,7 @@
   </div>
 
   <footer class="footer">
-    <span>built by <a href="https://github.com/mahesh-kakde" target="_blank" rel="noopener">mahesh kakde</a></span>
+    <span>built by <a href="https://maheshkakde.com" target="_blank" rel="noopener">mahesh kakde</a></span>
     <span class="footer-sep">&middot;</span>
     <span class="version-tag">v4.0.0</span>
     <span class="footer-sep">&middot;</span>
@@ -132,7 +132,7 @@
           </figure>
         </div>
 
-        <p>the benchmark to reach: <strong>144,868 points</strong>. in version 4, my goal is consistent 8k+ games and reaching 16,384, 32,768, and 65,536 tiles.</p>
+        <p>the benchmark to reach: <strong>144,868 points</strong>. in version 4, my goal is consistent 8k+ games and reaching 16,384 and 32,768 tiles.</p>
       </div>
 
       <div class="modal-tab-content" id="tab-technical">
@@ -142,7 +142,7 @@
         <p><strong>version 1:</strong> expectimax lookahead backed by a tensorflow.js neural network board evaluator. in-browser inference was heavy (&gt;100ms per move), bottlenecking search tree depth.</p>
         <p><strong>version 2:</strong> replaced tensorflow.js with a pure javascript matrix engine (&lt;0.03ms). but performance dropped to ~512 average tile -- scalar mse regression lost spatial board topology, and shallow depth 2 lookahead was vulnerable to tactical traps.</p>
         <p><strong>version 3:</strong> <strong>n-tuple network</strong> trained via <strong>temporal difference learning (td)</strong> across 100,000 self-play games on kaggle.</p>
-        <p><strong>version 4 (current):</strong> <strong>compiled webassembly bitboard expectimax</strong> with 16-bit monotonic row/column score maps, hard perimeter anchor invariants, and 64-bit zobrist transposition caching (&gt;10,000 nodes/sec in-browser lookahead, reaching 16,384, 32,768, and 65,536 tiles).</p>
+        <p><strong>version 4 (current):</strong> <strong>compiled webassembly bitboard expectimax</strong> with 16-bit monotonic row/column score maps, hard perimeter anchor invariants, and 64-bit zobrist transposition caching (&gt;10,000 nodes/sec in-browser lookahead, reaching 16,384 and 32,768 tiles).</p>
         
         <ul class="modal-list">
           <li><strong>compiled webassembly (c)</strong>: sub-millisecond bitboard search executing millions of evaluations per second in-browser.</li>
