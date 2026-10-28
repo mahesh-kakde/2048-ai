@@ -83,7 +83,7 @@ board evaluations at leaf nodes are computed using **16-bit monotonic score maps
 
 ## live demo
 
-[mk-2048-ai.vercel.app](https://mk-2048-ai.vercel.app)
+[2048.maheshkakde.com](https://2048.maheshkakde.com)
 
 ## license
 
