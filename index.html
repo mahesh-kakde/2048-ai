@@ -141,7 +141,7 @@
         <h3>engine evolution</h3>
         <p><strong>version 1:</strong> expectimax lookahead backed by a tensorflow.js neural network board evaluator. in-browser inference was heavy (&gt;100ms per move), bottlenecking search tree depth.</p>
         <p><strong>version 2:</strong> replaced tensorflow.js with a pure javascript matrix engine (&lt;0.03ms). but performance dropped to ~512 average tile -- scalar mse regression lost spatial board topology, and shallow depth 2 lookahead was vulnerable to tactical traps.</p>
-        <p><strong>version 3:</strong> <strong>n-tuple network</strong> trained via <strong>temporal difference learning (td)</strong> across 100,000 self-play games on kaggle.</p>
+        <p><strong>version 3:</strong> n-tuple network trained via temporal difference learning (td) across 100,000 self-play games on kaggle.</p>
         <p><strong>version 4 (current):</strong> <strong>compiled webassembly bitboard expectimax</strong> with 16-bit monotonic row/column score maps, hard perimeter anchor invariants, and 64-bit zobrist transposition caching (&gt;10,000 nodes/sec in-browser lookahead, reaching 16,384 and 32,768 tiles).</p>
         
         <ul class="modal-list">
