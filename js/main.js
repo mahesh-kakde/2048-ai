@@ -91,7 +91,6 @@ const Game = (() => {
     ai_btn.textContent = 'let ai play';
     if (typeof UI.update_latency === 'function') UI.update_latency(null);
     if (typeof UI.update_decision_hud === 'function') UI.update_decision_hud(null);
-    if (typeof UI.show_decision_hud === 'function') UI.show_decision_hud(false);
     if (typeof NN !== 'undefined') NN.reset_game();
     UI.hide_message();
     UI.update_score(0);
@@ -174,18 +173,13 @@ const Game = (() => {
       ai_btn.textContent = 'let ai play';
       if (typeof UI.update_latency === 'function') UI.update_latency(null);
       if (typeof UI.update_decision_hud === 'function') UI.update_decision_hud(null);
-      if (typeof UI.show_decision_hud === 'function') UI.show_decision_hud(false);
       return;
     }
 
     if (typeof get_last_search_stats === 'function') {
       const stats = get_last_search_stats();
       if (typeof UI.update_latency === 'function') {
-        if (stats.source && stats.source.startsWith('pdf-')) {
-          UI.update_latency(stats.time_ms < 0.1 ? '<0.1 ms' : `${stats.time_ms.toFixed(1)} ms`);
-        } else {
-          UI.update_latency(stats.time_ms);
-        }
+        UI.update_latency(stats.time_ms);
       }
       if (typeof UI.update_decision_hud === 'function') UI.update_decision_hud(stats.directional, stats);
     }

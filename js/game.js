@@ -128,12 +128,6 @@ function bitboard_to_board(bb) {
   return board;
 }
 
-function bitboard_get_tile(bb, r, c) {
-  const shift = BigInt((r * 4 + c) * 4);
-  const exp = Number((bb >> shift) & 0xFn);
-  return exp > 0 ? (1 << exp) : 0;
-}
-
 // checks if a move vacates or reduces an established top-left corner anchor tile
 function check_anchor_violation(old_board, new_board) {
   const old_corner = old_board[0][0];

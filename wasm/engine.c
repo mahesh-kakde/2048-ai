@@ -32,9 +32,8 @@ static float row_score_table[65536];
 static uint16_t row_right_table[65536];
 static float row_right_score_table[65536];
 
-// monotonic score map tables (65,536 entries each)
+// monotonic score map tables (65,536 entries)
 static float score_map_desc[65536];
-static float score_map_asc[65536];
 
 // zobrist hashing table (16 positions x 16 exponents)
 static uint64_t zobrist_table[16][16];
@@ -52,50 +51,6 @@ static int last_best_dir = -1;
 // optional n-tuple network weights (4 base tuples x 16^5 entries = 4,194,304 floats)
 static float *tuple_weights = 0;
 static int use_tuple = 0;
-
-// expanded 32 tuples (4 base patterns x 8 d4 symmetries)
-// format: {base_id, c0, c1, c2, c3, c4}
-static const int expanded_tuples[32][6] = {
-    // base 0: [0, 1, 2, 3, 4]
-    {0, 0, 1, 2, 3, 4},
-    {0, 3, 7, 11, 15, 2},
-    {0, 15, 14, 13, 12, 11},
-    {0, 12, 8, 4, 0, 13},
-    {0, 3, 2, 1, 0, 7},
-    {0, 12, 13, 14, 15, 8},
-    {0, 0, 4, 8, 12, 1},
-    {0, 15, 11, 7, 3, 14},
-
-    // base 1: [0, 1, 4, 5, 2]
-    {1, 0, 1, 4, 5, 2},
-    {1, 3, 7, 2, 6, 11},
-    {1, 15, 14, 11, 10, 13},
-    {1, 12, 8, 13, 9, 4},
-    {1, 3, 2, 7, 6, 1},
-    {1, 12, 13, 8, 9, 14},
-    {1, 0, 4, 1, 5, 8},
-    {1, 15, 11, 14, 10, 7},
-
-    // base 2: [0, 1, 4, 5, 8]
-    {2, 0, 1, 4, 5, 8},
-    {2, 3, 7, 2, 6, 1},
-    {2, 15, 14, 11, 10, 7},
-    {2, 12, 8, 13, 9, 14},
-    {2, 3, 2, 7, 6, 11},
-    {2, 12, 13, 8, 9, 4},
-    {2, 0, 4, 1, 5, 2},
-    {2, 15, 11, 14, 10, 13},
-
-    // base 3: [0, 1, 2, 4, 8]
-    {3, 0, 1, 2, 4, 8},
-    {3, 3, 7, 11, 2, 1},
-    {3, 15, 14, 13, 11, 7},
-    {3, 12, 8, 4, 13, 14},
-    {3, 3, 2, 1, 7, 11},
-    {3, 12, 13, 14, 8, 4},
-    {3, 0, 4, 8, 1, 2},
-    {3, 15, 11, 7, 14, 13}
-};
 
 // splitmix64 deterministic prng
 static uint64_t prng_seed = 0x853c49e6748fea9bULL;
@@ -400,16 +355,6 @@ static void init_score_map_tables(void) {
         score_desc += (a2 >= a3) ? (a2 + a3) : ((a2 - a3) * 12);
         if (a2 == a3 && a2 > 0) score_desc += a2;
         score_map_desc[i] = (float)score_desc;
-
-        // ascending (right to left)
-        int score_asc = a3;
-        score_asc += (a3 >= a2) ? (a3 + a2) : ((a3 - a2) * 12);
-        if (a3 == a2 && a3 > 0) score_asc += a3;
-        score_asc += (a2 >= a1) ? (a2 + a1) : ((a2 - a1) * 12);
-        if (a2 == a1 && a2 > 0) score_asc += a2;
-        score_asc += (a1 >= a0) ? (a1 + a0) : ((a1 - a0) * 12);
-        if (a1 == a0 && a1 > 0) score_asc += a1;
-        score_map_asc[i] = (float)score_asc;
     }
 }
 
