@@ -2,7 +2,6 @@
 
 training results, model performance, and score comparisons.
 
-this file gets updated after each training run on kaggle and after significant local testing.
 
 ---
 
