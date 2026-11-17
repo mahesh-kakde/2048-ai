@@ -102,8 +102,6 @@ const UI = (() => {
   }
 
   const hud_el = document.getElementById('decision-hud');
-  const hud_mode_el = document.getElementById('hud-mode');
-  const hud_detail_el = document.getElementById('hud-detail');
 
   const hud_dirs = {
     0: {
@@ -131,9 +129,6 @@ const UI = (() => {
   function update_decision_hud(telemetry, stats) {
     if (!hud_el) return;
     if (!telemetry) {
-      hud_el.classList.remove('hud-mode-tablebase', 'hud-mode-wasm', 'hud-mode-js');
-      if (hud_mode_el) hud_mode_el.textContent = 'ai standby';
-      if (hud_detail_el) hud_detail_el.textContent = '—';
       for (let d = 0; d < 4; d++) {
         const item = hud_dirs[d];
         if (!item || !item.el) continue;
@@ -147,34 +142,6 @@ const UI = (() => {
     const vals = [telemetry.up, telemetry.right, telemetry.down, telemetry.left];
     const best_d = telemetry.best_dir;
     const is_tablebase = telemetry.source && telemetry.source.startsWith('pdf-');
-    const is_wasm = telemetry.source === 'wasm-expectimax';
-
-    // update mode banner
-    hud_el.classList.toggle('hud-mode-tablebase', !!is_tablebase);
-    hud_el.classList.toggle('hud-mode-wasm', !!is_wasm);
-    hud_el.classList.toggle('hud-mode-js', !is_tablebase && !is_wasm);
-
-    if (hud_mode_el) {
-      if (is_tablebase) {
-        hud_mode_el.textContent = `tablebase (${telemetry.source})`;
-      } else if (is_wasm) {
-        hud_mode_el.textContent = 'wasm lookahead';
-      } else {
-        hud_mode_el.textContent = 'js expectimax';
-      }
-    }
-
-    if (hud_detail_el) {
-      if (is_tablebase) {
-        hud_detail_el.textContent = 'exact corridor';
-      } else {
-        const depth_val = telemetry.depth || (stats && stats.depth) || null;
-        const depth_str = depth_val ? `depth ${depth_val}` : '';
-        const nodes_val = telemetry.nodes || (stats && stats.nodes) || 0;
-        const nodes_str = nodes_val > 0 ? (nodes_val >= 1000 ? `${(nodes_val / 1000).toFixed(1)}k nodes` : `${nodes_val} nodes`) : '';
-        hud_detail_el.textContent = [depth_str, nodes_str].filter(Boolean).join(' • ') || 'active';
-      }
-    }
 
     // compute winning probability percentages
     const probs = [0, 0, 0, 0];
@@ -255,10 +222,6 @@ const UI = (() => {
     }
   }
 
-  function show_decision_hud(show) {
-    // hud is locked in place permanently to prevent layout shifting
-  }
-
   return {
     render,
     update_score,
@@ -267,7 +230,6 @@ const UI = (() => {
     hide_message,
     update_latency,
     set_turbo,
-    show_decision_hud,
     update_decision_hud
   };
 })();

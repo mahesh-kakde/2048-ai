@@ -6,7 +6,7 @@
   <meta name="description" content="2048 with an ai agent powered by compiled webassembly expectimax search and 16-bit monotonic evaluation. runs fully in the browser.">
   <meta name="theme-color" content="#faf8f0">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='5' fill='%23edc22e'/><text x='16' y='22' text-anchor='middle' font-family='monospace' font-weight='700' font-size='18' fill='%23776e65'>2k</text></svg>">
-  <title>2048 ai</title>
+  <title>2048-ai | Mahesh Kakde</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -14,10 +14,12 @@
 </head>
 <body>
 
+  <div class="version-tag">v4.0.0</div>
+
   <div class="container">
 
     <header class="header">
-      <h1 class="title">2048 <span class="title-accent">ai</span></h1>
+      <h1 class="title">2048<span class="title-accent">-ai</span></h1>
       <div class="header-right">
         <span class="latency-badge" id="latency-badge" title="ai move latency">-- ms</span>
         <button class="btn-nerds" id="info-btn">info for nerds</button>
@@ -62,12 +64,6 @@
     </div>
 
     <div class="decision-hud" id="decision-hud">
-      <div class="hud-meta">
-        <div class="hud-mode-wrap">
-          <span class="hud-mode" id="hud-mode">ai standby</span>
-        </div>
-        <span class="hud-detail" id="hud-detail">&mdash;</span>
-      </div>
       <div class="hud-grid">
         <div class="hud-dir" data-dir="0" id="hud-dir-up">
           <span class="hud-label">up</span>
@@ -103,9 +99,7 @@
   <footer class="footer">
     <span>built by <a href="https://maheshkakde.com" target="_blank" rel="noopener">mahesh kakde</a></span>
     <span class="footer-sep">&middot;</span>
-    <span class="version-tag">v4.0.0</span>
-    <span class="footer-sep">&middot;</span>
-    <a href="https://github.com/mahesh-kakde/2048-ai" target="_blank" rel="noopener">github</a>
+    <a href="https://github.com/mahesh-kakde" target="_blank" rel="noopener">github</a>
   </footer>
 
   <div class="modal-overlay" id="modal-overlay">

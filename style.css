@@ -91,6 +91,7 @@ body {
   font-weight: 700;
   color: var(--text);
   letter-spacing: -1px;
+  white-space: nowrap;
 }
 
 .title-accent {
@@ -114,7 +115,21 @@ body {
   padding: 5px 10px;
   border-radius: 14px;
   letter-spacing: 0.5px;
+  white-space: nowrap;
   user-select: none;
+}
+
+.version-tag {
+  position: fixed;
+  top: 12px;
+  right: 16px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--text-light);
+  letter-spacing: 0.4px;
+  user-select: none;
+  z-index: 10;
 }
 
 .btn-nerds {
@@ -128,6 +143,7 @@ body {
   font-weight: 600;
   cursor: pointer;
   letter-spacing: 0.2px;
+  white-space: nowrap;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 
@@ -382,51 +398,11 @@ body {
 .decision-hud {
   display: flex;
   width: 100%;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.hud-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 2px;
-}
-
-.hud-mode-wrap {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-
-.hud-mode {
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: 0.65rem;
-  letter-spacing: 0.5px;
-  color: var(--text);
-  text-transform: lowercase;
-}
-
-.decision-hud.hud-mode-tablebase .hud-mode {
-  color: #047857;
-}
-
-.decision-hud.hud-mode-wasm .hud-mode {
-  color: #0369a1;
-}
-
-.hud-detail {
-  font-family: var(--font-mono);
-  font-size: 0.65rem;
-  color: var(--text-light);
-  letter-spacing: 0.2px;
-  text-transform: lowercase;
 }
 
 .hud-grid {
   display: grid;
+  width: 100%;
   grid-template-columns: repeat(4, 1fr);
   gap: 6px;
 }
@@ -522,15 +498,16 @@ body {
 
 .btn {
   flex: 1;
-  padding: 8px 12px;
+  padding: 8px 6px;
   border: 2px solid var(--board-bg);
   border-radius: var(--radius);
   background: none;
   color: var(--text);
   font-family: var(--font-body);
-  font-size: 0.8rem;
+  font-size: 0.76rem;
   font-weight: 600;
   cursor: pointer;
+  white-space: nowrap;
   transition: background 0.15s, color 0.15s;
 }
 
@@ -570,8 +547,6 @@ body {
   outline: 2px solid var(--text);
   outline-offset: 2px;
 }
-
-
 
 /* -- footer -- */
 
@@ -614,12 +589,6 @@ body {
   color: var(--text-light);
   opacity: 0.6;
 }
-
-.version-tag {
-  color: var(--text-light);
-  font-weight: 500;
-}
-
 
 /* -- modal -- */
 
@@ -787,8 +756,9 @@ body {
   }
 
   .controls .btn {
-    padding: 7px 4px;
-    font-size: 0.74rem;
+    padding: 7px 3px;
+    font-size: 0.68rem;
+    white-space: nowrap;
   }
 
   .hud-dir {
@@ -821,6 +791,12 @@ body {
   .latency-badge {
     font-size: 0.65rem;
     padding: 3px 6px;
+  }
+
+  .version-tag {
+    font-size: 0.65rem;
+    top: 8px;
+    right: 12px;
   }
 
   .btn-nerds {
