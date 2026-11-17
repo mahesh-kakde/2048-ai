@@ -12,7 +12,6 @@ play 2048 with keyboard arrow keys or touch swipes on mobile, or hand control ov
 - **16-bit monotonic score maps:** precomputed 65,536-entry evaluation tables rewarding monotonic gradients, merge pairs, and corner anchors while applying 12x break penalties.
 - **hard perimeter anchor invariants:** topological guarantees keeping maximum tiles locked to corner anchors, preventing fatal board collapse.
 - **real-time decision telemetry:** directional probability softmax hud with lookahead depth statistics and live move latency.
-- **full 65,536 styling & support:** bespoke celestial styling with ambient breathing animations for 32k and 65k tiles.
 
 ## what was new in v3
 
@@ -29,8 +28,6 @@ play 2048 with keyboard arrow keys or touch swipes on mobile, or hand control ov
 - live move latency indicator (ms/move)
 - live decision telemetry displaying expected values and probabilities for all directions
 - compiled webassembly bitboard engine with javascript fallback
-- dual-tab modal with technical notes and personal benchmark documentation
-- clean, understated styling with 8k, 16k, 32k, and 65k tile styles
 - fully client-side static application -- no backend
 
 ## tech stack
@@ -38,7 +35,6 @@ play 2048 with keyboard arrow keys or touch swipes on mobile, or hand control ov
 - webassembly (c search engine, compiled with clang/llvm)
 - vanilla javascript (bitboard engine, expectimax search, indexeddb storage, ui)
 - html5 + css3 (responsive single-page layout, no frameworks)
-- space grotesk + jetbrains mono fonts
 - vercel (static deployment)
 
 ## how to run locally
@@ -87,4 +83,4 @@ board evaluations at leaf nodes are computed using **16-bit monotonic score maps
 
 ## license
 
-mit
+MIT
