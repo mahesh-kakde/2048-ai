@@ -9,7 +9,7 @@
 :root {
   --bg: #faf8f0;
   --text: #776e65;
-  --text-light: #b0a89e;
+  --text-light: #6e655c;
   --board-bg: #bbada0;
   --cell-bg: #cdc1b4;
 
@@ -184,7 +184,7 @@ body {
 
 .score-box {
   flex: 1;
-  background: var(--board-bg);
+  background: #776e65;
   border-radius: var(--radius);
   padding: 6px 10px;
   display: flex;
@@ -195,10 +195,10 @@ body {
 
 .score-label {
   font-size: 0.65rem;
-  font-weight: 500;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 1.5px;
-  color: rgba(255, 255, 255, 0.65);
+  color: #ffffff;
 }
 
 .score-value {
@@ -408,7 +408,7 @@ body {
 }
 
 .hud-dir {
-  background: var(--board-bg);
+  background: #776e65;
   border-radius: var(--radius);
   padding: 5px 4px;
   display: flex;
@@ -416,13 +416,13 @@ body {
   align-items: center;
   gap: 1px;
   transition: all 0.15s ease;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .hud-dir-best {
-  background: #8f7a66;
-  border-color: #695a4c;
-  box-shadow: 0 2px 6px rgba(119, 110, 101, 0.25);
+  background: #50463c;
+  border-color: #383028;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
 }
 
 .hud-dir-best .hud-label,
@@ -466,10 +466,10 @@ body {
 
 .hud-label {
   font-size: 0.62rem;
-  font-weight: 500;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 1.2px;
-  color: rgba(255, 255, 255, 0.65);
+  color: #ffffff;
 }
 
 .hud-val {
@@ -483,7 +483,7 @@ body {
 .hud-prob {
   font-family: var(--font-mono);
   font-size: 0.62rem;
-  color: rgba(255, 255, 255, 0.75);
+  color: #f2ede6;
   white-space: nowrap;
   letter-spacing: 0.4px;
 }
@@ -521,13 +521,14 @@ body {
 }
 
 .btn-primary {
-  background: var(--board-bg);
+  background: #776e65;
+  border-color: #776e65;
   color: #fff;
 }
 
 .btn-primary:hover {
-  background: var(--text);
-  border-color: var(--text);
+  background: #5c544c;
+  border-color: #5c544c;
 }
 
 .btn-turbo {
