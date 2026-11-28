@@ -77,19 +77,24 @@ try {
 
   await page.waitForFunction(() => window.AI && window.AI.is_wasm_ready() === true);
 
-  // verify 65,536 merge decision and 8-bit bitboard round-trip inside real browser wasm
+  // verify 65,536 merge decision, bottom-right handoff orientation, and 8-bit bitboard round-trip inside browser wasm
   const engineCheck = await page.evaluate(() => {
     const b65 = [[32768, 32768, 16384, 8192], [4096, 2048, 1024, 512], [256, 128, 64, 32], [16, 8, 4, 2]];
     const dir65 = window.ai_best_move(b65);
     const stats = window.AI.get_stats();
     const bb = window.board_to_bitboard(b65);
     const restored = window.bitboard_to_board(bb);
-    return { dir65, source: stats.source, leftVal: stats.directional.left, restoredZeroZero: restored[0][0] };
+    const brBoard = [[0, 0, 0, 0], [0, 2, 2, 0], [8, 16, 32, 64], [0, 256, 512, 1024]];
+    const brDir = window.ai_best_move(brBoard);
+    const brStats = window.AI.get_stats();
+    return { dir65, source: stats.source, leftVal: stats.directional.left, restoredZeroZero: restored[0][0], brDir, brEv: brStats.directional.raw[brDir] };
   });
   assert.equal(engineCheck.dir65, 3);
   assert.equal(engineCheck.source, 'wasm-expectimax');
   assert.ok(engineCheck.leftVal > -5e9);
   assert.equal(engineCheck.restoredZeroZero, 32768);
+  assert.ok(engineCheck.brDir === 1 || engineCheck.brDir === 2);
+  assert.ok(engineCheck.brEv > 0);
 
   // verify responsive viewport resize keeps every tile inside #board
   await page.setViewportSize({ width: 375, height: 667 });

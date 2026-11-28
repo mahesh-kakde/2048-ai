@@ -144,3 +144,60 @@ test('transposition table enforces prob monotonicity without poisoning high-prob
   tested.expectimax_max(sparse, 2, 0.5);
   assert.equal(tested.window.get_last_search_stats().tt_hits, 1);
 });
+
+test('4-corner symmetry transformation gives invariant optimal moves across TL, TR, BL, BR in wasm and js', async () => {
+  const { ctx: wasmCtx } = loadAiEngine({ enableWasm: true, allowFetch: true });
+  const { ctx: jsCtx } = loadAiEngine({ enableWasm: false });
+  assert.equal(await wasmCtx.window.init_wasm(), true);
+
+  wasmCtx.get_search_depth_wasm = () => 4;
+  jsCtx.get_search_depth = () => 4;
+
+  const dirMap = [
+    [0, 1, 2, 3], // corner 0: top-left
+    [0, 3, 2, 1], // corner 1: top-right
+    [2, 1, 0, 3], // corner 2: bottom-left
+    [2, 3, 0, 1]  // corner 3: bottom-right
+  ];
+  const orient = (b, c) => [0, 1, 2, 3].map((r) => {
+    const row = b[c >= 2 ? 3 - r : r];
+    return (c === 1 || c === 3) ? [row[3], row[2], row[1], row[0]] : row.slice();
+  });
+
+  // canonical board where row 0 has [1024,512,256,0] so Right/Down vacate [0][0]
+  const baseBoard = [
+    [1024, 512, 256, 0],
+    [64, 32, 16, 8],
+    [0, 2, 2, 0],
+    [0, 0, 0, 0]
+  ];
+
+  const baseWDir = wasmCtx.window.ai_best_move(baseBoard);
+  const baseJDir = jsCtx.window.ai_best_move(baseBoard);
+  assert.equal(baseWDir, baseJDir);
+  assert.ok(baseWDir === 0 || baseWDir === 3, 'base TL board must choose anchor-preserving move');
+  const baseWRaw = wasmCtx.window.get_directional_values().raw;
+
+  for (let c = 0; c < 4; c++) {
+    const rotBoard = orient(baseBoard, c);
+    const wDir = wasmCtx.window.ai_best_move(rotBoard);
+    const jDir = jsCtx.window.ai_best_move(rotBoard);
+    const wRaw = wasmCtx.window.get_directional_values().raw;
+
+    assert.equal(wDir, dirMap[c][baseWDir], `wasm corner ${c} best_dir mismatch`);
+    assert.equal(jDir, dirMap[c][baseJDir], `js corner ${c} best_dir mismatch`);
+    for (let d = 0; d < 4; d++) {
+      const mapped = dirMap[c][d];
+      if (baseWRaw[d] === null) assert.equal(wRaw[mapped], null);
+      else assert.ok(Math.abs(wRaw[mapped] - baseWRaw[d]) <= Math.max(1e-3, Math.abs(baseWRaw[d]) * 1e-12));
+    }
+  }
+
+  // explicitly check bottom-right 1024 board keeps anchor at [3][3] with positive EV instead of pulling UP
+  const brBoard = orient(baseBoard, 3);
+  const brDir = wasmCtx.window.ai_best_move(brBoard);
+  const brStats = wasmCtx.window.get_last_search_stats();
+  assert.ok(brDir === 1 || brDir === 2, `BR 1024 handoff must play Right or Down, got ${brDir}`);
+  assert.ok(brStats.directional.raw[brDir] > 0, `BR 1024 best EV should be positive, got ${brStats.directional.raw[brDir]}`);
+  assert.ok(brStats.directional.up < -5e9 && brStats.directional.left < -5e9, 'vacating BR corner must trigger danger penalty');
+});

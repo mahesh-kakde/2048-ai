@@ -503,6 +503,63 @@ static inline board_t read_shared_board(void) {
 
 int wasm_init(void);
 
+static inline uint32_t rev_bytes32(uint32_t r) {
+    return ((r & 0x000000FFU) << 24) |
+           ((r & 0x0000FF00U) << 8)  |
+           ((r & 0x00FF0000U) >> 8)  |
+           ((r & 0xFF000000U) >> 24);
+}
+
+// map corner (0=tl, 1=tr, 2=bl, 3=br) into canonical top-left [0][0] frame
+static inline board_t orient_board_bb(board_t b, int corner) {
+    if (corner == 0) return b;
+    uint32_t r0 = (uint32_t)(b.lo & 0xFFFFFFFFULL);
+    uint32_t r1 = (uint32_t)(b.lo >> 32);
+    uint32_t r2 = (uint32_t)(b.hi & 0xFFFFFFFFULL);
+    uint32_t r3 = (uint32_t)(b.hi >> 32);
+    board_t out;
+    if (corner == 1) {
+        out.lo = (uint64_t)rev_bytes32(r0) | ((uint64_t)rev_bytes32(r1) << 32);
+        out.hi = (uint64_t)rev_bytes32(r2) | ((uint64_t)rev_bytes32(r3) << 32);
+    } else if (corner == 2) {
+        out.lo = (uint64_t)r3 | ((uint64_t)r2 << 32);
+        out.hi = (uint64_t)r1 | ((uint64_t)r0 << 32);
+    } else {
+        out.lo = (uint64_t)rev_bytes32(r3) | ((uint64_t)rev_bytes32(r2) << 32);
+        out.hi = (uint64_t)rev_bytes32(r1) | ((uint64_t)rev_bytes32(r0) << 32);
+    }
+    return out;
+}
+
+static int choose_anchor_corner_bb(board_t b) {
+    int corners[4];
+    corners[0] = (int)(b.lo & 0xFFULL);
+    corners[1] = (int)((b.lo >> 24) & 0xFFULL);
+    corners[2] = (int)((b.hi >> 32) & 0xFFULL);
+    corners[3] = (int)((b.hi >> 56) & 0xFFULL);
+
+    int max_c = corners[0];
+    for (int i = 1; i < 4; i++) {
+        if (corners[i] > max_c) max_c = corners[i];
+    }
+    if (max_c < 6) return 0;
+
+    int best_corner = 0;
+    double best_eval = -1e30;
+    int have_best = 0;
+    for (int c = 0; c < 4; c++) {
+        if (corners[c] == max_c) {
+            double ev = evaluate_board_bb(orient_board_bb(b, c));
+            if (!have_best || ev > best_eval) {
+                best_eval = ev;
+                best_corner = c;
+                have_best = 1;
+            }
+        }
+    }
+    return best_corner;
+}
+
 static int search_internal(board_t board, int depth) {
     if (!is_initialized) {
         wasm_init();
@@ -512,28 +569,38 @@ static int search_internal(board_t board, int depth) {
     tt_hits_count = 0;
     current_search_age = (uint8_t)((current_search_age + 1) & 0xFF);
 
+    static const int corner_dir_map[4][4] = {
+        {0, 1, 2, 3},
+        {0, 3, 2, 1},
+        {2, 1, 0, 3},
+        {2, 3, 0, 1}
+    };
+    int corner = choose_anchor_corner_bb(board);
+    board_t canon_board = orient_board_bb(board, corner);
+
     last_best_dir = -1;
     double best_val = -1e30;
 
     static const int search_dirs[4] = {0, 3, 1, 2};
     for (int i = 0; i < 4; i++) {
-        int dir = search_dirs[i];
+        int canon_dir = search_dirs[i];
+        int orig_dir = corner_dir_map[corner][canon_dir];
         board_t next_b;
         double move_score = 0.0;
-        if (!execute_move(board, dir, &next_b, &move_score)) {
-            last_dir_valid[dir] = 0;
-            last_dir_values[dir] = -1e30;
+        if (!execute_move(canon_board, canon_dir, &next_b, &move_score)) {
+            last_dir_valid[orig_dir] = 0;
+            last_dir_values[orig_dir] = -1e30;
             continue;
         }
 
-        double penalty = check_anchor_violation_bb(board, next_b) ? -ANCHOR_PENALTY : 0.0;
+        double penalty = check_anchor_violation_bb(canon_board, next_b) ? -ANCHOR_PENALTY : 0.0;
         double val = penalty + expectimax_chance(next_b, depth - 1, 1.0);
-        last_dir_valid[dir] = 1;
-        last_dir_values[dir] = val;
+        last_dir_valid[orig_dir] = 1;
+        last_dir_values[orig_dir] = val;
 
         if (val > best_val) {
             best_val = val;
-            last_best_dir = dir;
+            last_best_dir = orig_dir;
         }
     }
 
