@@ -83,3 +83,25 @@ test('accessibility markup, reduced motion, reflow overflow, and wcag aa contras
   assert.ok(cr('#ffffff', '#7f1d1d') >= 4.5, 'hud danger card contrast < 4.5');
   assert.ok(cr('#756a60', varMap['--bg']) >= 4.5, '404 hero number contrast < 4.5');
 });
+
+test('benchmark images use stripped WebP assets with intrinsic dimensions and eager modal visibility', () => {
+  assert.equal(fs.existsSync(path.join(ROOT, 'High Score [1].jpg')), false);
+  assert.equal(fs.existsSync(path.join(ROOT, 'High Score [2].jpg')), false);
+
+  let totalBytes = 0;
+  for (const imgName of ['high-score-1.webp', 'high-score-2.webp']) {
+    const data = fs.readFileSync(path.join(ROOT, imgName));
+    totalBytes += data.length;
+    assert.equal(data.subarray(0, 4).toString('ascii'), 'RIFF');
+    assert.equal(data.subarray(8, 12).toString('ascii'), 'WEBP');
+    assert.equal(data.includes(Buffer.from('EXIF')), false, `${imgName} contains EXIF`);
+    assert.equal(data.includes(Buffer.from('XMP ')), false, `${imgName} contains XMP`);
+    assert.equal(data.includes(Buffer.from('ICCP')), false, `${imgName} contains ICC profile`);
+  }
+  assert.ok(totalBytes < 50 * 1024, `webp assets exceed 50 KB budget: ${totalBytes} bytes`);
+
+  const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  assert.match(html, /src="high-score-1\.webp"[^>]*width="440"[^>]*height="732"/);
+  assert.match(html, /src="high-score-2\.webp"[^>]*width="440"[^>]*height="732"/);
+  assert.equal(/loading="lazy"/.test(html), false, 'modal benchmark images must not defer loading with lazy');
+});

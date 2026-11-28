@@ -13,6 +13,7 @@ const MIME = {
   '.css': 'text/css; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
   '.wasm': 'application/wasm',
+  '.webp': 'image/webp',
   '.jpg': 'image/jpeg',
   '.c': 'text/plain; charset=utf-8',
   '.json': 'application/json'
@@ -109,9 +110,14 @@ try {
   assert.equal(await page.textContent('#score'), '0');
   assert.equal(await page.textContent('#ai-btn'), 'let ai play');
 
-  // verify aria modal dialog, focus restoration, and zero runtime telemetry errors
+  // verify aria modal dialog, eager image visibility, focus restoration, and zero runtime telemetry errors
   await page.click('#info-btn');
   assert.equal(await page.getAttribute('#modal-overlay', 'aria-hidden'), 'false');
+  const modalImgsOk = await page.evaluate(() => {
+    const imgs = [...document.querySelectorAll('#tab-benchmark img')];
+    return imgs.length === 2 && imgs.every(im => im.complete && im.naturalWidth === 440 && im.getBoundingClientRect().height > 0);
+  });
+  assert.equal(modalImgsOk, true, 'both modal benchmark webp images must render immediately on open');
   await page.keyboard.press('Escape');
   assert.equal(await page.getAttribute('#modal-overlay', 'aria-hidden'), 'true');
   assert.equal(await page.evaluate(() => document.activeElement && document.activeElement.id), 'info-btn');
