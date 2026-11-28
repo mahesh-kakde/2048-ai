@@ -16,16 +16,12 @@ const UI = (() => {
   let retiring_tiles = [];
   let cleanup_timer = null;
 
-  function get_cell_position(row, col) {
-    const cell = board_el.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
-    return {
-      left: cell.offsetLeft,
-      top: cell.offsetTop
-    };
+  function set_tile_position(el, row, col) {
+    el.style.setProperty('--row', row);
+    el.style.setProperty('--col', col);
   }
 
   function create_tile_el(row, col, value) {
-    const pos = get_cell_position(row, col);
     const el = document.createElement('div');
     el.className = 'tile';
     if (value > 2048) {
@@ -38,8 +34,7 @@ const UI = (() => {
     }
     el.setAttribute('data-value', value);
     el.textContent = value;
-    el.style.left = pos.left + 'px';
-    el.style.top = pos.top + 'px';
+    set_tile_position(el, row, col);
     return el;
   }
 
@@ -118,9 +113,7 @@ const UI = (() => {
         void el.offsetWidth;
       }
 
-      const pos = get_cell_position(tr, tc);
-      el.style.left = pos.left + 'px';
-      el.style.top = pos.top + 'px';
+      set_tile_position(el, tr, tc);
 
       if (m.merged) {
         el.style.zIndex = '9';
