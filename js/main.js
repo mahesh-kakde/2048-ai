@@ -33,42 +33,10 @@ const Game = (() => {
   const retry_btn = document.getElementById('retry-btn');
   let turbo_mode = false;
 
-  function find_merged_positions(old_board, new_board, direction) {
-    // a cell in new_board was a merge if its value > 0, it's double some value
-    // that existed in old_board, and the old cell at that position had a different value
-    // simpler: re-run the move and track merges
-    const merged = [];
-    const b = clone(old_board);
-
-    for (let i = 0; i < 4; i++) {
-      let row;
-      if (direction === 0)      row = [b[0][i], b[1][i], b[2][i], b[3][i]];
-      else if (direction === 1) row = [b[i][3], b[i][2], b[i][1], b[i][0]];
-      else if (direction === 2) row = [b[3][i], b[2][i], b[1][i], b[0][i]];
-      else                      row = [b[i][0], b[i][1], b[i][2], b[i][3]];
-
-      let vals = row.filter(v => v !== 0);
-      for (let j = 0; j < vals.length - 1; j++) {
-        if (vals[j] === vals[j + 1]) {
-          // j is the position in the compacted row where the merge lands
-          let r, c;
-          if (direction === 0)      { r = j; c = i; }
-          else if (direction === 1) { r = i; c = 3 - j; }
-          else if (direction === 2) { r = 3 - j; c = i; }
-          else                      { r = i; c = j; }
-          merged.push([r, c]);
-          vals.splice(j + 1, 1);
-        }
-      }
-    }
-    return merged;
-  }
-
   function do_move(direction) {
     if (game_over || (!ai_playing && input_locked)) return;
 
-    const old_board = clone(board);
-    const result = move(board, direction);
+    const result = typeof trace_move === 'function' ? trace_move(board, direction) : move(board, direction);
     if (!result.moved) return;
 
     if (!ai_playing) {
@@ -76,7 +44,6 @@ const Game = (() => {
       setTimeout(() => { input_locked = false; }, 150);
     }
 
-    const merged = find_merged_positions(old_board, result.board, direction);
     board = result.board;
     score += result.score;
 
@@ -90,7 +57,7 @@ const Game = (() => {
 
     UI.update_score(score);
     UI.update_best(best);
-    UI.render(board, s.pos, merged);
+    UI.render(board, s.pos, result.merges || null, result.movements || null);
 
     if (is_game_over(board)) {
       game_over = true;

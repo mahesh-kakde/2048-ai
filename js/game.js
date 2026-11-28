@@ -40,37 +40,93 @@ function slide_row(row) {
   return { row: vals, score };
 }
 
+const LINE_COORDS = [0, 1, 2, 3].map(dir =>
+  [0, 1, 2, 3].map(i => {
+    const coords = [];
+    for (let j = 0; j < 4; j++) {
+      if (dir === 0)      coords.push([j, i]);
+      else if (dir === 1) coords.push([i, 3 - j]);
+      else if (dir === 2) coords.push([3 - j, i]);
+      else                coords.push([i, j]);
+    }
+    return coords;
+  })
+);
+
 function move(board, direction) {
   const b = clone(board);
   let score = 0;
   let moved = false;
+  const lines = LINE_COORDS[direction];
 
   for (let i = 0; i < 4; i++) {
-    let row;
-
-    // extract the row/col as a left-aligned array based on direction
-    if (direction === 0)      row = [b[0][i], b[1][i], b[2][i], b[3][i]]; // up: column top-to-bottom
-    else if (direction === 1) row = [b[i][3], b[i][2], b[i][1], b[i][0]]; // right: row reversed
-    else if (direction === 2) row = [b[3][i], b[2][i], b[1][i], b[0][i]]; // down: column bottom-to-top
-    else                      row = [b[i][0], b[i][1], b[i][2], b[i][3]]; // left: row as-is
+    const coords = lines[i];
+    const row = [
+      b[coords[0][0]][coords[0][1]],
+      b[coords[1][0]][coords[1][1]],
+      b[coords[2][0]][coords[2][1]],
+      b[coords[3][0]][coords[3][1]]
+    ];
 
     const result = slide_row(row);
     score += result.score;
 
-    // write the slid row back into the board
     for (let j = 0; j < 4; j++) {
-      let r, c;
-      if (direction === 0)      { r = j; c = i; }
-      else if (direction === 1) { r = i; c = 3 - j; }
-      else if (direction === 2) { r = 3 - j; c = i; }
-      else                      { r = i; c = j; }
-
+      const [r, c] = coords[j];
       if (b[r][c] !== result.row[j]) moved = true;
       b[r][c] = result.row[j];
     }
   }
 
   return { board: b, score, moved };
+}
+
+function trace_move(board, direction) {
+  const b = [
+    [0, 0, 0, 0],
+    [0, 0, 0, 0],
+    [0, 0, 0, 0],
+    [0, 0, 0, 0]
+  ];
+  let score = 0;
+  let moved = false;
+  const movements = [];
+  const merges = [];
+  const lines = LINE_COORDS[direction];
+
+  for (let i = 0; i < 4; i++) {
+    const coords = lines[i];
+    const items = [];
+    for (let j = 0; j < 4; j++) {
+      const [r, c] = coords[j];
+      const v = board[r][c];
+      if (v !== 0) items.push({ r, c, value: v });
+    }
+
+    let out_idx = 0;
+    let k = 0;
+    while (k < items.length) {
+      const [dr, dc] = coords[out_idx];
+      if (k + 1 < items.length && items[k].value === items[k + 1].value) {
+        const merged_val = items[k].value * 2;
+        b[dr][dc] = merged_val;
+        score += merged_val;
+        moved = true;
+        movements.push({ from: [items[k].r, items[k].c], to: [dr, dc], value: items[k].value, merged: true });
+        movements.push({ from: [items[k + 1].r, items[k + 1].c], to: [dr, dc], value: items[k + 1].value, merged: true });
+        merges.push([dr, dc]);
+        k += 2;
+      } else {
+        b[dr][dc] = items[k].value;
+        if (items[k].r !== dr || items[k].c !== dc) moved = true;
+        movements.push({ from: [items[k].r, items[k].c], to: [dr, dc], value: items[k].value, merged: false });
+        k += 1;
+      }
+      out_idx++;
+    }
+  }
+
+  return { board: b, score, moved, movements, merges };
 }
 
 function is_game_over(board) {

@@ -7,6 +7,14 @@ const UI = (() => {
   const message_text = document.getElementById('message-text');
 
   let tile_elements = [];
+  let tile_grid = [
+    [null, null, null, null],
+    [null, null, null, null],
+    [null, null, null, null],
+    [null, null, null, null]
+  ];
+  let retiring_tiles = [];
+  let cleanup_timer = null;
 
   function get_cell_position(row, col) {
     const cell = board_el.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
@@ -35,31 +43,149 @@ const UI = (() => {
     return el;
   }
 
-  function render(board, spawn_pos, merged_positions) {
+  function clear_retiring() {
+    if (cleanup_timer) {
+      clearTimeout(cleanup_timer);
+      cleanup_timer = null;
+    }
+    retiring_tiles.forEach(el => el.remove());
+    retiring_tiles = [];
+  }
+
+  function clear_tiles() {
+    clear_retiring();
     tile_elements.forEach(el => el.remove());
     tile_elements = [];
-
     for (let r = 0; r < 4; r++) {
       for (let c = 0; c < 4; c++) {
-        if (board[r][c] === 0) continue;
-        const el = create_tile_el(r, c, board[r][c]);
+        tile_grid[r][c] = null;
+      }
+    }
+  }
 
-        if (spawn_pos && spawn_pos[0] === r && spawn_pos[1] === c) {
-          el.classList.add('tile-new');
-        }
+  function render(board, spawn_pos, merged_positions, movements) {
+    clear_retiring();
 
-        if (merged_positions) {
-          for (const [mr, mc] of merged_positions) {
-            if (mr === r && mc === c) {
-              el.classList.add('tile-merged');
-              break;
+    if (!movements) {
+      clear_tiles();
+      for (let r = 0; r < 4; r++) {
+        for (let c = 0; c < 4; c++) {
+          if (board[r][c] === 0) continue;
+          const el = create_tile_el(r, c, board[r][c]);
+
+          if (spawn_pos && spawn_pos[0] === r && spawn_pos[1] === c) {
+            el.classList.add('tile-new');
+          }
+
+          if (merged_positions) {
+            for (const [mr, mc] of merged_positions) {
+              if (mr === r && mc === c) {
+                el.classList.add('tile-merged');
+                break;
+              }
             }
           }
-        }
 
-        wrapper.appendChild(el);
-        tile_elements.push(el);
+          wrapper.appendChild(el);
+          tile_elements.push(el);
+          tile_grid[r][c] = el;
+        }
       }
+      return;
+    }
+
+    tile_elements.forEach(el => el.classList.remove('tile-new', 'tile-merged'));
+
+    const next_grid = [
+      [null, null, null, null],
+      [null, null, null, null],
+      [null, null, null, null],
+      [null, null, null, null]
+    ];
+    const next_elements = [];
+    const new_retiring = [];
+
+    for (let i = 0; i < movements.length; i++) {
+      const m = movements[i];
+      const [fr, fc] = m.from;
+      const [tr, tc] = m.to;
+      let el = tile_grid[fr][fc];
+      tile_grid[fr][fc] = null;
+
+      if (!el) {
+        el = create_tile_el(fr, fc, m.value);
+        wrapper.appendChild(el);
+        void el.offsetWidth;
+      }
+
+      const pos = get_cell_position(tr, tc);
+      el.style.left = pos.left + 'px';
+      el.style.top = pos.top + 'px';
+
+      if (m.merged) {
+        el.style.zIndex = '9';
+        new_retiring.push(el);
+      } else {
+        next_grid[tr][tc] = el;
+        next_elements.push(el);
+      }
+    }
+
+    // remove any leftover elements from old tile_grid not consumed by movements
+    for (let r = 0; r < 4; r++) {
+      for (let c = 0; c < 4; c++) {
+        if (tile_grid[r][c]) {
+          tile_grid[r][c].remove();
+          tile_grid[r][c] = null;
+        }
+      }
+    }
+
+    if (merged_positions) {
+      for (const [mr, mc] of merged_positions) {
+        if (board[mr][mc] === 0) continue;
+        const mel = create_tile_el(mr, mc, board[mr][mc]);
+        mel.classList.add('tile-merged');
+        wrapper.appendChild(mel);
+        next_grid[mr][mc] = mel;
+        next_elements.push(mel);
+      }
+    }
+
+    if (spawn_pos) {
+      const [sr, sc] = spawn_pos;
+      if (board[sr][sc] !== 0) {
+        const sel = create_tile_el(sr, sc, board[sr][sc]);
+        sel.classList.add('tile-new');
+        wrapper.appendChild(sel);
+        next_grid[sr][sc] = sel;
+        next_elements.push(sel);
+      }
+    }
+
+    // reconcile any orphaned or missing cells against authoritative board state
+    for (let r = 0; r < 4; r++) {
+      for (let c = 0; c < 4; c++) {
+        const val = board[r][c];
+        if (val !== 0 && !next_grid[r][c]) {
+          const el = create_tile_el(r, c, val);
+          wrapper.appendChild(el);
+          next_grid[r][c] = el;
+          next_elements.push(el);
+        } else if (val === 0 && next_grid[r][c]) {
+          next_grid[r][c].remove();
+          next_grid[r][c] = null;
+        }
+      }
+    }
+
+    tile_grid = next_grid;
+    tile_elements = next_elements;
+    retiring_tiles = new_retiring;
+
+    if (retiring_tiles.length > 0) {
+      const cleanup_ms = board_el.classList.contains('turbo') ? 55 : 155;
+      cleanup_timer = setTimeout(clear_retiring, cleanup_ms);
     }
   }
 

@@ -524,7 +524,7 @@ body {
   border-color: var(--tile-16) !important;
 }
 
-.board.turbo .tile {
+.board.turbo ~ .tile {
   transition: top 50ms linear, left 50ms linear;
 }
 
