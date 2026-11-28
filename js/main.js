@@ -1,7 +1,28 @@
 const Game = (() => {
+  function storage_get(key) {
+    try {
+      return localStorage.getItem(key);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function storage_set(key, val) {
+    try {
+      localStorage.setItem(key, String(val));
+    } catch (_) {}
+  }
+
+  function storage_remove(key) {
+    try {
+      localStorage.removeItem(key);
+    } catch (_) {}
+  }
+
   let board = null;
   let score = 0;
-  let best = parseInt(localStorage.getItem('2048-best')) || 0;
+  const parsed_best = parseInt(storage_get('2048-best'), 10);
+  let best = Number.isFinite(parsed_best) && parsed_best > 0 ? parsed_best : 0;
   let game_over = false;
   let input_locked = false;
   let ai_playing = false;
@@ -64,7 +85,7 @@ const Game = (() => {
 
     if (score > best) {
       best = score;
-      localStorage.setItem('2048-best', best);
+      storage_set('2048-best', best);
     }
 
     UI.update_score(score);
@@ -221,9 +242,7 @@ const Game = (() => {
     try {
       if (typeof indexedDB !== 'undefined') indexedDB.deleteDatabase('2048_ai_db');
     } catch (_) {}
-    try {
-      if (typeof localStorage !== 'undefined') localStorage.removeItem('2048-tuple-games-learned');
-    } catch (_) {}
+    storage_remove('2048-tuple-games-learned');
 
     new_game();
   }
