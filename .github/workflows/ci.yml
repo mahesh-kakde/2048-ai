@@ -1,0 +1,63 @@
+name: ci
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+jobs:
+  unit-and-wasm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: "0.17.1"
+
+      - name: verify wasm build compiles cleanly
+        run: |
+          zig cc -target wasm32-freestanding -O3 -Wl,--no-entry -Wl,--strip-all -Wl,-z,stack-size=1048576 -o /tmp/engine.ci.wasm wasm/engine.c
+          node -e "
+            const fs = require('fs');
+            const ciBuf = fs.readFileSync('/tmp/engine.ci.wasm');
+            const ai = fs.readFileSync('js/ai.js', 'utf8');
+            const rel = ai.match(/const WASM_BINARY_PATH = '([^']+)';/)[1];
+            const committedBuf = fs.readFileSync(rel);
+            const ciMod = new WebAssembly.Module(ciBuf);
+            const commMod = new WebAssembly.Module(committedBuf);
+            const ciExports = WebAssembly.Module.exports(ciMod).map(e => e.name).sort();
+            const commExports = WebAssembly.Module.exports(commMod).map(e => e.name).sort();
+            if (JSON.stringify(ciExports) !== JSON.stringify(commExports)) {
+              throw new Error('wasm export mismatch between engine.c and committed wasm binary');
+            }
+            console.log('wasm compile ok:', ciBuf.length, 'bytes, exports:', ciExports.length);
+          "
+
+      - name: lint and static checks
+        run: npm run lint
+
+      - name: run unit, parity, and security tests
+        run: npm test
+
+  e2e-chromium:
+    runs-on: ubuntu-latest
+    needs: unit-and-wasm
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: install ephemeral playwright chromium
+        run: |
+          npm install --no-save playwright
+          npx playwright install chromium --with-deps
+
+      - name: run browser e2e smoke suite
+        run: npm run test:e2e

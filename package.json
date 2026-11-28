@@ -1,0 +1,11 @@
+{
+  "name": "2048-ai",
+  "private": true,
+  "version": "4.0.2",
+  "description": "browser-based 2048 game with webassembly expectimax ai",
+  "scripts": {
+    "lint": "node tests/lint.js",
+    "test": "node --test tests/*.test.js",
+    "test:e2e": "node tests/e2e/smoke.mjs"
+  }
+}
