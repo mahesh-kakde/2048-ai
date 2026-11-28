@@ -130,7 +130,7 @@ compiled webassembly bitboard expectimax with 16-bit monotonic row/column score 
 
 ## v3 local learning observations (historical)
 
-note: v4 production runtime removed `model/tuples_v3.bin`, `2048_ai_db` indexeddb persistence, and local td weight updates in favor of pure stateless compiled webassembly expectimax (upgraded with 8-bit `65,536+` cells and 4-corner root symmetry; see `CHANGELOG.md`).
+note: v4 production runtime removed `model/tuples_v3.bin`, `2048_ai_db` indexeddb persistence, and local td weight updates in favor of pure stateless compiled webassembly expectimax (upgraded with 8-bit `65,536+` cells and 4-corner root symmetry).
 
 the archived v3 prototype refined weights client-side per-user via:
 - fine-tuning tuple weights after completed games using td error updates directly in the browser

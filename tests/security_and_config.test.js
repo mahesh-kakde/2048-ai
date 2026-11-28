@@ -36,13 +36,10 @@ test('vercel.json enforces hashed wasm immutability and strict CSP without unsaf
   assert.equal(resolveVercelHeaders(cfg, hashedPath)['Cache-Control'], 'public, max-age=31536000, immutable');
   assert.equal(resolveVercelHeaders(cfg, '/wasm/engine.wasm')['Cache-Control'], 'public, max-age=0, must-revalidate');
   assert.equal(resolveVercelHeaders(cfg, '/wasm/engine.c')['Cache-Control'], 'public, max-age=0, must-revalidate');
-  assert.equal(resolveVercelHeaders(cfg, '/sw.js')['Cache-Control'], 'public, max-age=0, must-revalidate');
 
   const headers = resolveVercelHeaders(cfg, '/');
   const csp = headers['Content-Security-Policy'];
   assert.ok(csp && csp.includes("script-src 'self' 'wasm-unsafe-eval'"));
-  assert.ok(csp.includes("worker-src 'self'"));
-  assert.ok(csp.includes("manifest-src 'self'"));
   assert.ok(csp.includes("object-src 'none'"));
   assert.ok(csp.includes("frame-ancestors 'none'"));
   assert.equal(csp.includes("'unsafe-inline'"), false);
@@ -142,21 +139,14 @@ test('dist build strictly includes runtime assets and excludes notebooks, c sour
     const actual = listRel(tmpOut).sort();
     const expected = [
       '404.html',
-      'apple-touch-icon.png',
       'high-score-1.webp',
       'high-score-2.webp',
-      'icon-192.png',
-      'icon-512.png',
       'index.html',
       'js/ai.js',
       'js/game.js',
       'js/main.js',
       'js/ui.js',
-      'manifest.webmanifest',
-      'og-image.png',
-      'robots.txt',
       'style.css',
-      'sw.js',
       getWasmBinaryPath()
     ].sort();
     assert.deepEqual(actual, expected);
@@ -164,62 +154,20 @@ test('dist build strictly includes runtime assets and excludes notebooks, c sour
     assert.equal(fs.existsSync(path.join(tmpOut, 'package.json')), false);
     assert.equal(fs.existsSync(path.join(tmpOut, 'tests')), false);
     assert.equal(fs.existsSync(path.join(tmpOut, 'README.md')), false);
-    assert.equal(fs.existsSync(path.join(tmpOut, 'CHANGELOG.md')), false);
   } finally {
     fs.rmSync(tmpOut, { recursive: true, force: true });
   }
 });
 
-test('seo, noscript, manifest, og-image, and service worker precache integrity hold', () => {
+test('noscript fallback, corner symmetry notes, and repo documentation links align', () => {
   const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
   assert.match(html, /<noscript>[\s\S]*class="noscript-banner"[\s\S]*<\/noscript>/);
-  assert.match(html, /<meta\s+property="og:image"\s+content="https:\/\/2048\.maheshkakde\.com\/og-image\.png"/);
-  assert.match(html, /<meta\s+name="twitter:image"\s+content="https:\/\/2048\.maheshkakde\.com\/og-image\.png"/);
-  assert.match(html, /<link\s+rel="apple-touch-icon"[^>]*href="\/apple-touch-icon\.png"/);
-  assert.match(html, /<link\s+rel="manifest"\s+href="\/manifest\.webmanifest"/);
+  assert.match(html, /4-corner symmetry rotation/);
 
   const css = fs.readFileSync(path.join(ROOT, 'style.css'), 'utf8');
   assert.match(css, /\.noscript-banner\s*\{/);
 
-  const robots = fs.readFileSync(path.join(ROOT, 'robots.txt'), 'utf8');
-  assert.match(robots, /User-agent:\s*\*/);
-  assert.match(robots, /Allow:\s*\//);
-
-  const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'manifest.webmanifest'), 'utf8'));
-  assert.equal(manifest.start_url, '/');
-  assert.equal(manifest.scope, '/');
-  assert.equal(manifest.display, 'standalone');
-  assert.ok(Array.isArray(manifest.icons) && manifest.icons.length >= 2);
-  assert.deepEqual(manifest.icons.map(i => i.sizes), ['192x192', '512x512']);
-
-  const expectedPngDims = {
-    'og-image.png': [1200, 630],
-    'apple-touch-icon.png': [180, 180],
-    'icon-192.png': [192, 192],
-    'icon-512.png': [512, 512]
-  };
-  for (const [pngName, [expW, expH]] of Object.entries(expectedPngDims)) {
-    const buf = fs.readFileSync(path.join(ROOT, pngName));
-    assert.equal(buf.subarray(0, 8).toString('hex'), '89504e470d0a1a0a', `${pngName} invalid png header`);
-    assert.equal(buf.readUInt32BE(16), expW, `${pngName} width mismatch`);
-    assert.equal(buf.readUInt32BE(20), expH, `${pngName} height mismatch`);
-    assert.ok(buf.length < 100 * 1024, `${pngName} exceeds 100 KB: ${buf.length}`);
-  }
-
-  const swCode = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
-  assert.ok(swCode.includes(`const WASM_PATH = '/${getWasmBinaryPath()}';`), 'sw.js WASM_PATH out of sync');
-  assert.equal(swCode.includes("'/index.html'"), false, 'sw.js must precache / instead of /index.html to avoid cleanUrls 308');
-  const precacheList = [...swCode.matchAll(/'(\/[^']*)'/g)].map(m => m[1]);
-  assert.ok(precacheList.includes('/'));
-  for (const urlPath of precacheList) {
-    const rel = urlPath === '/' ? 'index.html' : urlPath.slice(1);
-    assert.equal(fs.existsSync(path.join(ROOT, rel)), true, `missing sw.js precache asset: ${rel}`);
-  }
-
-  assert.match(html, /4-corner symmetry rotation/);
-  assert.equal(fs.existsSync(path.join(ROOT, 'CHANGELOG.md')), true);
   const readme = fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8');
-  assert.match(readme, /2048-ai\.git/);
-  assert.equal(/2048-nn\.git/.test(readme), false);
+  assert.match(readme, /https:\/\/github\.com\/mahesh-kakde\/2048-ai\.git/);
   assert.match(readme, /2048\.maheshkakde\.com/);
 });

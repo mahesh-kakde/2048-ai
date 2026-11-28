@@ -172,7 +172,7 @@ function loadAiEngine({ enableWasm = true, allowFetch = true } = {}) {
   return { ctx, fetchedUrls, wasmRel, wasmBytes };
 }
 
-function loadFullApp({ localStorageImpl, indexedDBImpl, timersImpl, navigatorImpl, enableWasm = true } = {}) {
+function loadFullApp({ localStorageImpl, indexedDBImpl, timersImpl, enableWasm = true } = {}) {
   const dom = createDomMock();
   const timers = timersImpl || createFakeTimers();
   const wasmRel = getWasmBinaryPath();
@@ -220,7 +220,6 @@ function loadFullApp({ localStorageImpl, indexedDBImpl, timersImpl, navigatorImp
     clearTimeout: timers.clearTimeout,
     indexedDB: idb,
     localStorage: ls,
-    navigator: navigatorImpl,
     document: dom.document,
     window: undefined
   };

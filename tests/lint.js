@@ -19,15 +19,14 @@ function listFiles(dir, exts) {
 const jsFiles = [
   ...listFiles(path.join(ROOT, 'js'), ['.js']),
   ...listFiles(path.join(ROOT, 'scripts'), ['.js']),
-  ...listFiles(path.join(ROOT, 'tests'), ['.js', '.mjs']),
-  path.join(ROOT, 'sw.js')
+  ...listFiles(path.join(ROOT, 'tests'), ['.js', '.mjs'])
 ];
 
 for (const file of jsFiles) {
   execFileSync(process.execPath, ['--check', file], { stdio: 'pipe' });
 }
 
-for (const jsonFile of ['package.json', 'vercel.json', 'manifest.webmanifest']) {
+for (const jsonFile of ['package.json', 'vercel.json']) {
   JSON.parse(fs.readFileSync(path.join(ROOT, jsonFile), 'utf8'));
 }
 
@@ -39,7 +38,6 @@ const textFiles = [
   path.join(ROOT, 'wasm', 'engine.c'),
   path.join(ROOT, 'README.md'),
   path.join(ROOT, 'RESULTS.md'),
-  path.join(ROOT, 'CHANGELOG.md'),
   ...jsFiles
 ];
 

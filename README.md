@@ -11,7 +11,7 @@ play 2048 with keyboard arrow keys or touch swipes on mobile, or hand control ov
 - **compiled webassembly bitboard expectimax:** sub-millisecond c-compiled search engine (`zig 0.17.1`, `-target wasm32-freestanding`) with 8-bit `65,536+` tile encoding running in-browser via wasm.
 - **16-bit monotonic score maps:** precomputed 65,536-entry evaluation tables rewarding monotonic gradients, merge pairs, and corner anchors while applying 12x break penalties.
 - **4-corner dynamic symmetry rotation:** topological corner anchor protection that rotates the established highest corner tile (`tl`, `tr`, `bl`, `br`) at search root, preventing mid-game human handoff collapse.
-- **real-time decision telemetry & offline pwa:** largest-remainder normalized directional probability softmax hud, live move latency badge, wcag aa contrast/aria support, and offline service worker.
+- **real-time decision telemetry:** largest-remainder normalized directional probability softmax hud, live move latency badge, and wcag aa contrast/aria support.
 
 ## what was new in v3
 
@@ -28,12 +28,12 @@ play 2048 with keyboard arrow keys or touch swipes on mobile, or hand control ov
 - live move latency indicator (ms/move)
 - live decision telemetry displaying expected values and 100%-normalized softmax probabilities for all directions
 - compiled webassembly bitboard engine with embedded base64 and javascript fallback
-- installable offline pwa -- no backend
+- fully client-side static application -- no backend
 
 ## tech stack
 
 - webassembly (c search engine, compiled with `zig 0.17.1` to `wasm/engine.<hash>.wasm`)
-- vanilla javascript (bitboard engine, expectimax search, ui, offline service worker)
+- vanilla javascript (bitboard engine, expectimax search, ui)
 - html5 + css3 (responsive single-page layout, wcag 2.1 aa contrast, aria dialog/tablist)
 - vercel static deployment (`node scripts/build_dist.js` -> `dist/`) + github actions ci
 
@@ -54,7 +54,7 @@ play 2048 with keyboard arrow keys or touch swipes on mobile, or hand control ov
    ```bash
    python -m http.server 8000
    ```
-   (a local server is required for fetching the hashed webassembly binary and registering the service worker; embedded base64 and javascript fallback activate automatically if offline or blocked).
+   (a local server is required for fetching the hashed webassembly binary; embedded base64 and javascript fallback activate automatically if blocked).
 
 3. run automated lint, build, and tests
    ```bash

@@ -16,9 +16,6 @@ const MIME = {
   '.js': 'text/javascript; charset=utf-8',
   '.wasm': 'application/wasm',
   '.webp': 'image/webp',
-  '.png': 'image/png',
-  '.webmanifest': 'application/manifest+json',
-  '.txt': 'text/plain; charset=utf-8',
   '.jpg': 'image/jpeg',
   '.c': 'text/plain; charset=utf-8',
   '.json': 'application/json'
@@ -141,21 +138,7 @@ try {
   const tel = await page.evaluate(() => window.Telemetry.get_report());
   assert.equal(tel.error_count, 0);
   assert.equal(tel.engine_mode, 'wasm');
-
-  // verify seo/pwa assets and active service worker registration under csp
-  const pwaMetaOk = await page.evaluate(async () => {
-    const ogImg = document.querySelector('meta[property="og:image"]');
-    const manifestLink = document.querySelector('link[rel="manifest"]');
-    const noscriptEl = document.querySelector('noscript');
-    const reg = ('serviceWorker' in navigator) ? await navigator.serviceWorker.ready : null;
-    return Boolean(ogImg && ogImg.content.endsWith('/og-image.png') && manifestLink && noscriptEl && reg && reg.active);
-  });
-  assert.equal(pwaMetaOk, true, 'seo metadata and active service worker must be present');
-
-  for (const pwaPath of ['/robots.txt', '/manifest.webmanifest', '/og-image.png', '/apple-touch-icon.png']) {
-    const r = await page.goto(`${baseUrl}${pwaPath}`);
-    assert.equal(r.status(), 200, `expected 200 OK for ${pwaPath}`);
-  }
+  assert.equal(await page.evaluate(() => Boolean(document.querySelector('noscript'))), true);
 
   // verify non-runtime files are not served from dist
   for (const blockedPath of ['/wasm/engine.c', '/package.json', '/README.md', '/RESULTS.md', '/tests/game.test.js']) {
