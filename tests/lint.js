@@ -37,6 +37,9 @@ const textFiles = [
   path.join(ROOT, '404.html'),
   path.join(ROOT, 'style.css'),
   path.join(ROOT, 'wasm', 'engine.c'),
+  path.join(ROOT, 'README.md'),
+  path.join(ROOT, 'RESULTS.md'),
+  path.join(ROOT, 'CHANGELOG.md'),
   ...jsFiles
 ];
 

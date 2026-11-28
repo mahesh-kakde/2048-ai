@@ -168,7 +168,7 @@
         <ul class="modal-list">
           <li><strong>compiled webassembly (c)</strong>: sub-millisecond bitboard search executing millions of evaluations per second in-browser.</li>
           <li><strong>16-bit monotonic score maps</strong>: 65,536-entry precomputed row and column evaluation tables rewarding monotonic gradients and merge pairs.</li>
-          <li><strong>hard perimeter anchor invariants</strong>: topological protection locking the highest tile to the top-left corner.</li>
+          <li><strong>hard perimeter anchor invariants</strong>: topological protection locking the highest tile to its established corner anchor via 4-corner symmetry rotation.</li>
           <li><strong>64-bit zobrist transposition table</strong>: 131,072-entry cache avoiding redundant search tree exploration.</li>
           <li><strong>depth 5-6 expectimax</strong>: deep forward lookahead with selective chance pruning (&lt;10ms latency).</li>
           <li><strong>real-time decision telemetry</strong>: live softmax probability distribution and lookahead stats.</li>

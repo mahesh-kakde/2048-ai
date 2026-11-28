@@ -341,7 +341,7 @@ const Game = (() => {
       if (typeof UI.update_latency === 'function') {
         UI.update_latency(stats.time_ms);
       }
-      if (typeof UI.update_decision_hud === 'function') UI.update_decision_hud(stats.directional, stats);
+      if (typeof UI.update_decision_hud === 'function') UI.update_decision_hud(stats.directional);
     }
 
     do_move(dir);

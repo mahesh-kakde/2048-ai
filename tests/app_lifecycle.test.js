@@ -243,3 +243,55 @@ test('service worker registers /sw.js cleanly without surfacing async errors on 
   assert.deepEqual(registeredPaths, ['/sw.js']);
   assert.equal(ctx.window.Telemetry.get_report().error_count, 0);
 });
+
+test('decision hud normalizes valid softmax percentages to sum to exactly 100', () => {
+  const { ctx, dom } = loadFullApp();
+
+  // exact 3-way tie must sum to 100% with remainder allocated to best_dir
+  ctx.UI.update_decision_hud({ up: 100, right: 100, down: 100, left: null, best_dir: 2 });
+  assert.deepEqual(
+    ['up', 'right', 'down', 'left'].map(k => dom.getEl(`hud-prob-${k}`).textContent),
+    ['33%', '33%', '34%', '']
+  );
+
+  // mixed valid + danger + blocked moves: valid moves sum to exact 100%, danger shows risk
+  const cases = [
+    { up: 500, right: 500, down: 499, left: 499, best_dir: 1 },
+    { up: 1234, right: 1200, down: -6e9, left: 1180, best_dir: 0 },
+    { up: 10, right: null, down: 10, left: null, best_dir: 0 },
+    { up: 999999, right: 999998, down: 999997, left: 999996, best_dir: 0 }
+  ];
+  for (let i = 0; i < 60; i++) {
+    const vals = [0, 1, 2, 3].map(d => {
+      if ((i + d) % 7 === 0) return null;
+      if ((i + d) % 9 === 0) return -6e9;
+      return ((i * 73 + d * 197) % 1000) - 200;
+    });
+    if (vals.some(v => typeof v === 'number' && v > -5e9)) {
+      const best = vals.reduce((bi, v, idx) => (typeof v === 'number' && (bi === -1 || v > vals[bi]) ? idx : bi), -1);
+      cases.push({ up: vals[0], right: vals[1], down: vals[2], left: vals[3], best_dir: best });
+    }
+  }
+
+  for (const c of cases) {
+    ctx.UI.update_decision_hud(c);
+    const dirs = ['up', 'right', 'down', 'left'];
+    let sum = 0;
+    let validCount = 0;
+    for (const d of dirs) {
+      const txt = dom.getEl(`hud-prob-${d}`).textContent;
+      if (c[d] === null || c[d] === undefined) {
+        assert.equal(txt, '');
+      } else if (c[d] < -5e9) {
+        assert.equal(txt, '0% (risk)');
+      } else {
+        validCount++;
+        const n = Number(txt.replace('%', ''));
+        assert.equal(Number.isInteger(n), true);
+        assert.ok(n >= 0 && n <= 100);
+        sum += n;
+      }
+    }
+    if (validCount > 0) assert.equal(sum, 100, `expected 100% sum, got ${sum} for ${JSON.stringify(c)}`);
+  }
+});

@@ -128,10 +128,12 @@ compiled webassembly bitboard expectimax with 16-bit monotonic row/column score 
 
 ---
 
-## local learning observations
+## v3 local learning observations (historical)
 
-tracks how the model refines weights client-side per-user:
-- fine-tunes tuple weights after completed games using td error updates directly in the browser
-- persists updated weight buffers asynchronously into indexeddb (`2048_ai_db`)
-- loads from indexeddb on startup when available, falling back to shipped binary weights (`model/tuples_v3.bin`)
-- bypasses localstorage 5mb storage ceiling via raw arraybuffer storage
+note: v4 production runtime removed `model/tuples_v3.bin`, `2048_ai_db` indexeddb persistence, and local td weight updates in favor of pure stateless compiled webassembly expectimax (upgraded with 8-bit `65,536+` cells and 4-corner root symmetry; see `CHANGELOG.md`).
+
+the archived v3 prototype refined weights client-side per-user via:
+- fine-tuning tuple weights after completed games using td error updates directly in the browser
+- persisting updated weight buffers asynchronously into indexeddb (`2048_ai_db`)
+- loading from indexeddb on startup when available, falling back to shipped binary weights (`model/tuples_v3.bin`)
+- bypassing localstorage 5mb storage ceiling via raw arraybuffer storage

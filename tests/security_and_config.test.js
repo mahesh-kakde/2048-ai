@@ -164,6 +164,7 @@ test('dist build strictly includes runtime assets and excludes notebooks, c sour
     assert.equal(fs.existsSync(path.join(tmpOut, 'package.json')), false);
     assert.equal(fs.existsSync(path.join(tmpOut, 'tests')), false);
     assert.equal(fs.existsSync(path.join(tmpOut, 'README.md')), false);
+    assert.equal(fs.existsSync(path.join(tmpOut, 'CHANGELOG.md')), false);
   } finally {
     fs.rmSync(tmpOut, { recursive: true, force: true });
   }
@@ -214,4 +215,11 @@ test('seo, noscript, manifest, og-image, and service worker precache integrity h
     const rel = urlPath === '/' ? 'index.html' : urlPath.slice(1);
     assert.equal(fs.existsSync(path.join(ROOT, rel)), true, `missing sw.js precache asset: ${rel}`);
   }
+
+  assert.match(html, /4-corner symmetry rotation/);
+  assert.equal(fs.existsSync(path.join(ROOT, 'CHANGELOG.md')), true);
+  const readme = fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8');
+  assert.match(readme, /2048-ai\.git/);
+  assert.equal(/2048-nn\.git/.test(readme), false);
+  assert.match(readme, /2048\.maheshkakde\.com/);
 });

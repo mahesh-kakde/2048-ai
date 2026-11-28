@@ -8,34 +8,34 @@ play 2048 with keyboard arrow keys or touch swipes on mobile, or hand control ov
 
 ## what's new in v4
 
-- **compiled webassembly bitboard expectimax:** sub-millisecond c-compiled search engine running millions of node evaluations per second directly in the browser via wasm.
+- **compiled webassembly bitboard expectimax:** sub-millisecond c-compiled search engine (`zig 0.17.1`, `-target wasm32-freestanding`) with 8-bit `65,536+` tile encoding running in-browser via wasm.
 - **16-bit monotonic score maps:** precomputed 65,536-entry evaluation tables rewarding monotonic gradients, merge pairs, and corner anchors while applying 12x break penalties.
-- **hard perimeter anchor invariants:** topological guarantees keeping maximum tiles locked to corner anchors, preventing fatal board collapse.
-- **real-time decision telemetry:** directional probability softmax hud with lookahead depth statistics and live move latency.
+- **4-corner dynamic symmetry rotation:** topological corner anchor protection that rotates the established highest corner tile (`tl`, `tr`, `bl`, `br`) at search root, preventing mid-game human handoff collapse.
+- **real-time decision telemetry & offline pwa:** largest-remainder normalized directional probability softmax hud, live move latency badge, wcag aa contrast/aria support, and offline service worker.
 
 ## what was new in v3
 
-- **32-symmetric n-tuple network:** 4 base 5-tuples expanded across 8 d4 dihedral symmetries into 32 lookup tables (4,194,304 float32 weights, 16.77 mb binary table).
+- **32-symmetric n-tuple network:** 4 base 5-tuples expanded across 8 d4 dihedral symmetries into 32 lookup tables (4,194,304 float32 weights, 16.77 mb binary table). *(preserved on historical `v3` branch; removed from current `master` runtime)*
 - **sub-microsecond pure javascript inference:** direct float32array table lookups running in ~0.5us per evaluation (~2,000,000 evaluations/second).
 - **deep expectimax with 64-bit zobrist transposition table:** 131,072-entry transposition cache with 64-bit bitboard hashing and chance branch pruning.
-- **client-side td fine-tuning via indexeddb:** asynchronous td(0) error updates stored directly in browser indexeddb (`2048_ai_db`).
+- **client-side td fine-tuning via indexeddb:** archived experiment (`2048_ai_db`), replaced in v4 by stateless compiled webassembly lookahead.
 
 ## features
 
-- keyboard arrow keys and mobile touch swipe controls
-- autonomous ai play with visible tile sliding and merging animations
+- keyboard arrow keys and board-scoped mobile touch swipe controls
+- autonomous ai play with visible css-grid tile sliding and merging animations
 - normal mode (200ms moves) and turbo mode (40ms moves with 50ms slide animations)
 - live move latency indicator (ms/move)
-- live decision telemetry displaying expected values and probabilities for all directions
-- compiled webassembly bitboard engine with javascript fallback
-- fully client-side static application -- no backend
+- live decision telemetry displaying expected values and 100%-normalized softmax probabilities for all directions
+- compiled webassembly bitboard engine with embedded base64 and javascript fallback
+- installable offline pwa -- no backend
 
 ## tech stack
 
-- webassembly (c search engine, compiled with clang/llvm)
-- vanilla javascript (bitboard engine, expectimax search, indexeddb storage, ui)
-- html5 + css3 (responsive single-page layout, no frameworks)
-- vercel (static deployment)
+- webassembly (c search engine, compiled with `zig 0.17.1` to `wasm/engine.<hash>.wasm`)
+- vanilla javascript (bitboard engine, expectimax search, ui, offline service worker)
+- html5 + css3 (responsive single-page layout, wcag 2.1 aa contrast, aria dialog/tablist)
+- vercel static deployment (`node scripts/build_dist.js` -> `dist/`) + github actions ci
 
 ## how to run locally
 
@@ -45,17 +45,25 @@ play 2048 with keyboard arrow keys or touch swipes on mobile, or hand control ov
    cd 2048-ai
    ```
 
-2. serve the files with any static server
+2. serve the files with any static server (or build `dist/` first)
    ```bash
-   npx serve .
+   npm run build
+   npx serve dist
    ```
-   or with python:
+   or serve the repository root directly with python:
    ```bash
    python -m http.server 8000
    ```
-   (a local server is required for fetching wasm binaries and model weights via fetch/xhr).
+   (a local server is required for fetching the hashed webassembly binary and registering the service worker; embedded base64 and javascript fallback activate automatically if offline or blocked).
 
-3. play with arrow keys or press "let ai play" to watch the ai.
+3. run automated lint, build, and tests
+   ```bash
+   npm run lint
+   npm run build
+   npm test
+   ```
+
+4. play with arrow keys or press "let ai play" to watch the ai.
 
 ## how the ai works
 
@@ -64,8 +72,8 @@ the ai uses **expectimax search** -- a game tree search algorithm designed for e
 board evaluations at leaf nodes are computed using **16-bit monotonic score maps**:
 - 65,536 precomputed row and column patterns encode exponential tile valuations, monotonic gradient rewards, and merge pairing bonuses.
 - any break in monotonicity is penalized with a 12x penalty gradient, keeping high tiles strictly ordered along the perimeter.
-- hard anchor invariants enforce that the top-left tile cannot be vacated or reduced once established.
-- to accelerate tree exploration, the engine maintains a 64-bit **zobrist transposition table** that caches previously computed subtree evaluations, reducing redundant branch calculations.
+- 4-corner symmetry rotation aligns whichever corner currently holds the established maximum tile, enforcing corner anchor protection without forcing mid-game top-left abandonment.
+- to accelerate tree exploration, the engine maintains a 64-bit **zobrist transposition table** that caches previously computed subtree evaluations with probability monotonicity guards.
 
 ## performance comparisons
 
@@ -79,7 +87,7 @@ board evaluations at leaf nodes are computed using **16-bit monotonic score maps
 
 ## live demo
 
-[2048.maheshkakde.com](https://2048.maheshkakde.com)
+[2048.maheshkakde.com](https://2048.maheshkakde.com) (canonical subdomain only; no `www` subdomain)
 
 ## license
 

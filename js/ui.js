@@ -262,7 +262,7 @@ const UI = (() => {
     }
   };
 
-  function update_decision_hud(telemetry, stats) {
+  function update_decision_hud(telemetry) {
     if (!hud_el) return;
     if (!telemetry) {
       for (let d = 0; d < 4; d++) {
@@ -278,7 +278,7 @@ const UI = (() => {
     const vals = [telemetry.up, telemetry.right, telemetry.down, telemetry.left];
     const best_d = telemetry.best_dir;
 
-    // compute winning probability percentages
+    // compute winning probability percentages normalized via largest-remainder rounding
     const probs = [0, 0, 0, 0];
     let max_v = -Infinity;
     let valid_count = 0;
@@ -304,10 +304,27 @@ const UI = (() => {
         }
       }
       if (total_weight > 0) {
+        const remainders = [];
+        let sum_floor = 0;
         for (let d = 0; d < 4; d++) {
           if (weights[d] > 0) {
-            probs[d] = Math.round((weights[d] / total_weight) * 100);
+            const exact = (weights[d] / total_weight) * 100;
+            const floored = Math.floor(exact);
+            probs[d] = floored;
+            sum_floor += floored;
+            remainders.push({ d, rem: exact - floored });
           }
+        }
+        remainders.sort((a, b) => {
+          if (b.rem !== a.rem) return b.rem - a.rem;
+          if (a.d === best_d) return -1;
+          if (b.d === best_d) return 1;
+          return a.d - b.d;
+        });
+        let leftover = 100 - sum_floor;
+        for (let i = 0; i < remainders.length && leftover > 0; i++) {
+          probs[remainders[i].d]++;
+          leftover--;
         }
       }
     }
