@@ -151,16 +151,16 @@ function create_board() {
   return s2.board;
 }
 
-// bitboard utilities (64-bit bigint, 4 bits per cell exponent)
+// bitboard utilities (128-bit bigint, 8 bits per cell exponent)
 function board_to_bitboard(board) {
   let bb = 0n;
   let shift = 0n;
   for (let r = 0; r < 4; r++) {
     for (let c = 0; c < 4; c++) {
       const v = board[r][c];
-      const exp = v > 0 ? BigInt(Math.round(Math.log2(v)) & 0xF) : 0n;
+      const exp = v > 0 ? BigInt(Math.min(255, Math.round(Math.log2(v)))) : 0n;
       bb |= (exp << shift);
-      shift += 4n;
+      shift += 8n;
     }
   }
   return bb;
@@ -176,9 +176,9 @@ function bitboard_to_board(bb) {
   let shift = 0n;
   for (let r = 0; r < 4; r++) {
     for (let c = 0; c < 4; c++) {
-      const exp = Number((bb >> shift) & 0xFn);
-      board[r][c] = exp > 0 ? (1 << exp) : 0;
-      shift += 4n;
+      const exp = Number((bb >> shift) & 0xFFn);
+      board[r][c] = exp > 0 ? Math.pow(2, exp) : 0;
+      shift += 8n;
     }
   }
   return board;

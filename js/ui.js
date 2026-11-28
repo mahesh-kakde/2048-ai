@@ -267,7 +267,7 @@ const UI = (() => {
     let valid_count = 0;
     for (let d = 0; d < 4; d++) {
       const v = vals[d];
-      if (typeof v === 'number' && v > -1e6) {
+      if (typeof v === 'number' && v > -5e9) {
         if (v > max_v) max_v = v;
         valid_count++;
       }
@@ -279,7 +279,7 @@ const UI = (() => {
       const temp = Math.max(10, Math.abs(max_v) * 0.05);
       for (let d = 0; d < 4; d++) {
         const v = vals[d];
-        if (typeof v === 'number' && v > -1e6) {
+        if (typeof v === 'number' && v > -5e9) {
           const diff = (v - max_v) / temp;
           const w = Math.exp(Math.max(-20, diff));
           weights[d] = w;
@@ -300,7 +300,7 @@ const UI = (() => {
       const item = hud_dirs[d];
       if (!item || !item.el) continue;
       const v = vals[d];
-      const is_danger = typeof v === 'number' && v < -1e6;
+      const is_danger = typeof v === 'number' && v < -5e9;
 
       item.el.classList.toggle('hud-dir-best', d === best_d);
       item.el.classList.toggle('hud-dir-invalid', v === null || v === undefined);
