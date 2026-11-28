@@ -199,6 +199,23 @@ const UI = (() => {
     message_el.classList.remove('active');
   }
 
+  const status_el = document.getElementById('status-banner');
+  const status_text_el = document.getElementById('status-text');
+
+  function show_status(text, level) {
+    if (!status_el || !status_text_el) return;
+    if (status_el.classList.contains('status-error') && level !== 'error') return;
+    status_text_el.textContent = text;
+    status_el.classList.toggle('status-error', level === 'error');
+    status_el.classList.add('active');
+  }
+
+  function hide_status() {
+    if (!status_el) return;
+    status_el.classList.remove('active', 'status-error');
+    if (status_text_el) status_text_el.textContent = '';
+  }
+
   const latency_el = document.getElementById('latency-badge');
 
   function update_latency(ms) {
@@ -336,6 +353,8 @@ const UI = (() => {
     update_best,
     show_message,
     hide_message,
+    show_status,
+    hide_status,
     update_latency,
     set_turbo,
     update_decision_hud

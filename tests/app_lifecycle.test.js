@@ -110,3 +110,45 @@ test('UI uses CSS grid variables, slides tiles cleanly without leaks, and separa
   assert.match(css, /\.tile\s*\{[\s\S]*left:\s*calc\(var\(--cell-gap\)\s*\+\s*var\(--col/);
   assert.match(css, /\.tile\s*\{[\s\S]*top:\s*calc\(var\(--cell-gap\)\s*\+\s*var\(--row/);
 });
+
+test('runtime telemetry tracks errors, wasm fallback, degraded storage, and dismissible status banner', async () => {
+  // storage error degrades cleanly with dismissible warning banner
+  const throwingStorage = {
+    getItem() { throw new Error('SecurityError'); },
+    setItem() { throw new Error('QuotaExceededError'); },
+    removeItem() {}
+  };
+  const app1 = loadFullApp({ localStorageImpl: throwingStorage });
+  await app1.ctx.window.init_wasm();
+  const rep1 = app1.ctx.window.Telemetry.get_report();
+  assert.equal(rep1.storage_degraded, true);
+  assert.equal(app1.dom.getEl('status-banner').classList.contains('active'), true);
+  assert.match(app1.dom.getEl('status-text').textContent, /storage unavailable/);
+  app1.dom.listeners['status-close:click']();
+  assert.equal(app1.dom.getEl('status-banner').classList.contains('active'), false);
+
+  // global error, unhandledrejection, and ai_step exception recovery keep event log bounded (<= 50)
+  const app2 = loadFullApp({ enableWasm: false });
+  await app2.ctx.window.init_wasm();
+  assert.equal(app2.ctx.window.Telemetry.get_report().engine_mode, 'js-fallback');
+  assert.equal(app2.dom.getEl('status-banner').classList.contains('active'), true);
+  assert.match(app2.dom.getEl('status-text').textContent, /wasm unavailable/);
+
+  for (let i = 0; i < 60; i++) {
+    app2.winListeners.error[0]({ error: new Error(`boom-${i}`) });
+  }
+  app2.winListeners.unhandledrejection[0]({ reason: new Error('async-boom') });
+  assert.equal(app2.dom.getEl('status-banner').classList.contains('status-error'), true);
+  // non-error warning must not overwrite an active runtime error banner
+  app2.ctx.UI.show_status('minor notice', 'warn');
+  assert.equal(app2.dom.getEl('status-banner').classList.contains('status-error'), true);
+
+  app2.runInContext('ai_best_move = () => { throw new Error("search crash"); };');
+  app2.dom.listeners['ai-btn:click']();
+  assert.equal(app2.dom.getEl('ai-btn').textContent, 'let ai play');
+
+  const rep2 = app2.ctx.window.Telemetry.get_report();
+  assert.equal(rep2.error_count, 62);
+  assert.equal(rep2.events.length, 50);
+  assert.ok(rep2.events.some(e => e.type === 'ai_step_error'));
+});

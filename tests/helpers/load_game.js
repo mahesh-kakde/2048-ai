@@ -160,11 +160,12 @@ function loadAiEngine({ enableWasm = true, allowFetch = true } = {}) {
   return { ctx, fetchedUrls, wasmRel, wasmBytes };
 }
 
-function loadFullApp({ localStorageImpl, indexedDBImpl, timersImpl } = {}) {
+function loadFullApp({ localStorageImpl, indexedDBImpl, timersImpl, enableWasm = true } = {}) {
   const dom = createDomMock();
   const timers = timersImpl || createFakeTimers();
   const wasmRel = getWasmBinaryPath();
   const wasmBytes = fs.readFileSync(path.join(ROOT, wasmRel));
+  const winListeners = {};
 
   let store = {};
   const ls = localStorageImpl || {
@@ -175,7 +176,7 @@ function loadFullApp({ localStorageImpl, indexedDBImpl, timersImpl } = {}) {
   const idb = indexedDBImpl === undefined ? { deleteDatabase() {} } : indexedDBImpl;
 
   const ctx = {
-    console,
+    console: enableWasm ? console : { ...console, warn: () => {} },
     Math,
     Number,
     BigInt,
@@ -192,7 +193,7 @@ function loadFullApp({ localStorageImpl, indexedDBImpl, timersImpl } = {}) {
     Promise,
     Error,
     performance,
-    WebAssembly,
+    WebAssembly: enableWasm ? WebAssembly : undefined,
     atob: (b64) => Buffer.from(b64, 'base64').toString('binary'),
     fetch: async (url) => {
       if (url === wasmRel) {
@@ -211,11 +212,15 @@ function loadFullApp({ localStorageImpl, indexedDBImpl, timersImpl } = {}) {
     window: undefined
   };
   ctx.window = ctx;
+  ctx.addEventListener = (ev, fn) => {
+    winListeners[ev] = winListeners[ev] || [];
+    winListeners[ev].push(fn);
+  };
   vm.createContext(ctx);
   for (const script of ['js/game.js', 'js/ui.js', 'js/ai.js', 'js/main.js']) {
     vm.runInContext(fs.readFileSync(path.join(ROOT, script), 'utf8'), ctx, { filename: script });
   }
-  return { ctx, dom, timers, store, runInContext: (code) => vm.runInContext(code, ctx) };
+  return { ctx, dom, timers, store, winListeners, runInContext: (code) => vm.runInContext(code, ctx) };
 }
 
 function vercelSourceToRegex(source) {

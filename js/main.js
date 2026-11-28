@@ -1,22 +1,81 @@
 const Game = (() => {
+  const MAX_TELEMETRY_EVENTS = 50;
+  const telemetry_state = {
+    engine_mode: 'initializing',
+    storage_degraded: false,
+    error_count: 0,
+    moves_human: 0,
+    moves_ai: 0,
+    ai_total_ms: 0,
+    ai_max_ms: 0,
+    events: []
+  };
+  let storage_notified = false;
+  let global_handlers_bound = false;
+
+  function record_telemetry(type, detail) {
+    if (telemetry_state.events.length >= MAX_TELEMETRY_EVENTS) {
+      telemetry_state.events.shift();
+    }
+    telemetry_state.events.push({
+      type,
+      detail: detail ? String(detail) : '',
+      ts: Date.now()
+    });
+  }
+
+  function notify_storage_degraded() {
+    telemetry_state.storage_degraded = true;
+    if (!storage_notified) {
+      storage_notified = true;
+      record_telemetry('storage_degraded', 'localStorage unavailable');
+      if (typeof UI !== 'undefined' && typeof UI.show_status === 'function') {
+        UI.show_status('storage unavailable: best score saved for this session only', 'warn');
+      }
+    }
+  }
+
+  function report_error(source, err) {
+    telemetry_state.error_count++;
+    const msg = err && err.message ? err.message : String(err || 'unknown error');
+    record_telemetry(source, msg);
+    if (typeof UI !== 'undefined' && typeof UI.show_status === 'function') {
+      UI.show_status('runtime error recovered; game state preserved', 'error');
+    }
+  }
+
   function storage_get(key) {
     try {
+      if (typeof localStorage === 'undefined') {
+        telemetry_state.storage_degraded = true;
+        return null;
+      }
       return localStorage.getItem(key);
     } catch (_) {
+      telemetry_state.storage_degraded = true;
       return null;
     }
   }
 
   function storage_set(key, val) {
     try {
+      if (typeof localStorage === 'undefined') {
+        notify_storage_degraded();
+        return;
+      }
       localStorage.setItem(key, String(val));
-    } catch (_) {}
+    } catch (_) {
+      notify_storage_degraded();
+    }
   }
 
   function storage_remove(key) {
     try {
+      if (typeof localStorage === 'undefined') return;
       localStorage.removeItem(key);
-    } catch (_) {}
+    } catch (_) {
+      telemetry_state.storage_degraded = true;
+    }
   }
 
   let board = null;
@@ -74,6 +133,8 @@ const Game = (() => {
 
     board = result.board;
     score += result.score;
+    if (ai_playing) telemetry_state.moves_ai++;
+    else telemetry_state.moves_human++;
 
     const s = spawn(board);
     board = s.board;
@@ -194,7 +255,17 @@ const Game = (() => {
       return;
     }
 
-    const dir = ai_best_move(board);
+    let dir = -1;
+    try {
+      dir = ai_best_move(board);
+    } catch (err) {
+      ai_playing = false;
+      ai_btn.textContent = 'let ai play';
+      if (typeof UI.update_latency === 'function') UI.update_latency(null);
+      report_error('ai_step_error', err);
+      return;
+    }
+
     if (dir === -1) {
       ai_playing = false;
       ai_btn.textContent = 'let ai play';
@@ -205,6 +276,13 @@ const Game = (() => {
 
     if (typeof get_last_search_stats === 'function') {
       const stats = get_last_search_stats();
+      if (typeof stats.time_ms === 'number' && Number.isFinite(stats.time_ms)) {
+        telemetry_state.ai_total_ms += stats.time_ms;
+        if (stats.time_ms > telemetry_state.ai_max_ms) {
+          telemetry_state.ai_max_ms = stats.time_ms;
+        }
+      }
+      telemetry_state.engine_mode = stats.source === 'wasm-expectimax' ? 'wasm' : 'js-fallback';
       if (typeof UI.update_latency === 'function') {
         UI.update_latency(stats.time_ms);
       }
@@ -255,6 +333,21 @@ const Game = (() => {
       });
     });
 
+    const status_close_btn = document.getElementById('status-close');
+    if (status_close_btn && typeof UI.hide_status === 'function') {
+      status_close_btn.addEventListener('click', UI.hide_status);
+    }
+
+    if (!global_handlers_bound && typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+      global_handlers_bound = true;
+      window.addEventListener('error', e => {
+        report_error('window_error', (e && (e.error || e.message)) || 'script error');
+      });
+      window.addEventListener('unhandledrejection', e => {
+        report_error('unhandled_rejection', (e && e.reason) || 'rejected promise');
+      });
+    }
+
     // purge obsolete v3/v4 prototype storage left in returning visitors' browsers
     try {
       if (typeof indexedDB !== 'undefined') indexedDB.deleteDatabase('2048_ai_db');
@@ -262,11 +355,52 @@ const Game = (() => {
     storage_remove('2048-tuple-games-learned');
 
     new_game();
+
+    if (telemetry_state.storage_degraded) {
+      notify_storage_degraded();
+    }
+
+    if (typeof init_wasm === 'function') {
+      Promise.resolve(init_wasm()).then(ok => {
+        telemetry_state.engine_mode = ok ? 'wasm' : 'js-fallback';
+        record_telemetry('wasm_init', ok ? 'ready' : 'fallback');
+        if (!ok && typeof UI.show_status === 'function') {
+          UI.show_status('wasm unavailable: running javascript search fallback', 'warn');
+        }
+      }).catch(err => {
+        telemetry_state.engine_mode = 'js-fallback';
+        report_error('wasm_init_error', err);
+      });
+    }
+  }
+
+  function get_telemetry() {
+    return {
+      engine_mode: telemetry_state.engine_mode,
+      storage_degraded: telemetry_state.storage_degraded,
+      error_count: telemetry_state.error_count,
+      moves_human: telemetry_state.moves_human,
+      moves_ai: telemetry_state.moves_ai,
+      avg_ai_ms: telemetry_state.moves_ai > 0 ? Number((telemetry_state.ai_total_ms / telemetry_state.moves_ai).toFixed(2)) : 0,
+      max_ai_ms: Number(telemetry_state.ai_max_ms.toFixed(2)),
+      events: telemetry_state.events.map(ev => ({ ...ev }))
+    };
+  }
+
+  function clear_telemetry() {
+    telemetry_state.error_count = 0;
+    telemetry_state.events = [];
   }
 
 // expose do_move and board for ai module
-  return { init, do_move, get_board: () => board, is_over: () => game_over };
+  return { init, do_move, get_board: () => board, is_over: () => game_over, get_telemetry, clear_telemetry };
 })();
 
-if (typeof window !== 'undefined') window.Game = Game;
+if (typeof window !== 'undefined') {
+  window.Game = Game;
+  window.Telemetry = {
+    get_report: Game.get_telemetry,
+    clear: Game.clear_telemetry
+  };
+}
 Game.init();
