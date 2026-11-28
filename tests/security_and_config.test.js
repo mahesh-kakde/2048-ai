@@ -68,8 +68,8 @@ test('accessibility markup, reduced motion, reflow overflow, and wcag aa contras
 
   const css = fs.readFileSync(path.join(ROOT, 'style.css'), 'utf8');
   assert.match(css, /@media\s*\(prefers-reduced-motion:\s*reduce\)/);
-  assert.equal(/html,\s*body\s*\{[^}]*overflow:\s*hidden/.test(css), false);
-  assert.match(css, /html,\s*body\s*\{[^}]*overflow-y:\s*auto/);
+  assert.match(css, /html,\s*body\s*\{[^}]*overflow:\s*hidden/);
+  assert.match(css, /html,\s*body\s*\{[^}]*height:\s*100dvh/);
   assert.match(css, /\.board-wrapper\s*\{[^}]*touch-action:\s*none/);
   assert.match(css, /\.board\s*\{[^}]*touch-action:\s*none/);
 
@@ -89,9 +89,13 @@ test('accessibility markup, reduced motion, reflow overflow, and wcag aa contras
   for (const v of [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048]) {
     assert.ok(cr(varMap['--tile-text-dark'], varMap[`--tile-${v}`]) >= 4.5, `tile-${v} contrast < 4.5`);
   }
-  assert.ok(cr('#ffffff', '#655c54') >= 4.5, 'primary/hud button contrast < 4.5');
-  assert.ok(cr('#4e463f', '#e8e1d7') >= 4.5, 'hud invalid card contrast < 4.5');
-  assert.ok(cr('#ffffff', '#7f1d1d') >= 4.5, 'hud danger card contrast < 4.5');
+  assert.ok(cr('#ffffff', '#4a423b') >= 4.5, 'primary button contrast < 4.5');
+  assert.ok(cr(varMap['--tile-text-dark'], varMap['--surface-elevated']) >= 4.5, 'score card contrast < 4.5');
+  assert.ok(cr(varMap['--tile-text-dark'], varMap['--surface-muted']) >= 4.5, 'best card contrast < 4.5');
+  assert.ok(cr(varMap['--tile-text-dark'], '#ede6d8') >= 4.5, 'hud neutral card contrast < 4.5');
+  assert.ok(cr(varMap['--tile-text-dark'], '#f2cf66') >= 4.5, 'hud best card contrast < 4.5');
+  assert.ok(cr(varMap['--text-light'], '#f6f2ea') >= 4.5, 'hud invalid card contrast < 4.5');
+  assert.ok(cr('#7f1d1d', '#fde8e8') >= 4.5, 'hud danger card contrast < 4.5');
   assert.ok(cr('#756a60', varMap['--bg']) >= 4.5, '404 hero number contrast < 4.5');
 });
 
@@ -159,10 +163,29 @@ test('dist build strictly includes runtime assets and excludes notebooks, c sour
   }
 });
 
-test('noscript fallback, corner symmetry notes, and repo documentation links align', () => {
+test('noscript fallback, global footer, corner symmetry notes, and repo documentation links align', () => {
   const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  const html404 = fs.readFileSync(path.join(ROOT, '404.html'), 'utf8');
+  assert.match(html, /<title>2048-ai \| Mahesh Kakde<\/title>/);
+  assert.match(html, /<link\s+rel="canonical"\s+href="https:\/\/2048\.maheshkakde\.com\/"/);
   assert.match(html, /<noscript>[\s\S]*class="noscript-banner"[\s\S]*<\/noscript>/);
   assert.match(html, /4-corner symmetry rotation/);
+  assert.match(html404, /<title>404 not found \| 2048-ai<\/title>/);
+  assert.match(html404, /<a href="\/" class="btn btn-primary" id="home-btn">home<\/a>/);
+  assert.equal(/back to game/i.test(html404), false);
+  assert.equal(/<a\b[^>]*class="error-logo"/.test(html404), false);
+  const techModal = html.slice(html.indexOf('id="tab-technical"'), html.indexOf('id="tab-technical"') + 2000);
+  assert.equal(/github\.com/.test(techModal), false);
+
+  for (const page of [html, html404]) {
+    assert.match(page, /Created by <a href="https:\/\/maheshkakde\.com"[^>]*>Mahesh Kakde<\/a>/);
+    assert.match(page, /<a href="https:\/\/github\.com\/mahesh-kakde\/2048-ai"[^>]*>GitHub<\/a>/);
+  }
+
+  for (const rel of ['index.html', '404.html', 'style.css', 'vercel.json', 'js/game.js', 'js/ui.js', 'js/ai.js', 'js/main.js']) {
+    const content = fs.readFileSync(path.join(ROOT, rel), 'utf8');
+    assert.equal(/(?:127\.0\.0\.1|localhost|file:\/\/)/i.test(content), false, `local URL found in ${rel}`);
+  }
 
   const css = fs.readFileSync(path.join(ROOT, 'style.css'), 'utf8');
   assert.match(css, /\.noscript-banner\s*\{/);

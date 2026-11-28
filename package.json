@@ -1,7 +1,7 @@
 {
   "name": "2048-ai",
   "private": true,
-  "version": "4.0.2",
+  "version": "4.1.0",
   "description": "browser-based 2048 game with webassembly expectimax ai",
   "scripts": {
     "build": "node scripts/build_dist.js",

@@ -96,18 +96,27 @@ try {
   assert.ok(engineCheck.brDir === 1 || engineCheck.brDir === 2);
   assert.ok(engineCheck.brEv > 0);
 
-  // verify responsive viewport resize keeps every tile inside #board
-  await page.setViewportSize({ width: 375, height: 667 });
-  await page.waitForTimeout(100);
-  const geometryOk = await page.evaluate(() => {
-    const board = document.getElementById('board').getBoundingClientRect();
-    const tiles = [...document.querySelectorAll('.board-wrapper .tile:not(.tile-retiring)')];
-    return tiles.length >= 2 && tiles.every((t) => {
-      const r = t.getBoundingClientRect();
-      return r.left >= board.left && r.right <= board.right && r.top >= board.top && r.bottom <= board.bottom;
+  // verify single-screen non-scrollable fit and tile containment across laptop, tablet, and mobile viewports
+  for (const vp of [{ width: 1280, height: 720 }, { width: 768, height: 1024 }, { width: 375, height: 667 }]) {
+    await page.setViewportSize(vp);
+    await page.waitForTimeout(100);
+    const layoutOk = await page.evaluate(() => {
+      const doc = document.documentElement;
+      const board = document.getElementById('board').getBoundingClientRect();
+      const footer = document.querySelector('footer.footer').getBoundingClientRect();
+      const tiles = [...document.querySelectorAll('.board-wrapper .tile:not(.tile-retiring)')];
+      const tilesInside = tiles.length >= 2 && tiles.every((t) => {
+        const r = t.getBoundingClientRect();
+        return r.left >= board.left && r.right <= board.right && r.top >= board.top && r.bottom <= board.bottom;
+      });
+      const noScroll = doc.scrollHeight <= doc.clientHeight && doc.scrollWidth <= doc.clientWidth;
+      const footerVisible = footer.height > 0 && footer.bottom <= window.innerHeight + 1;
+      return { tilesInside, noScroll, footerVisible };
     });
-  });
-  assert.equal(geometryOk, true, 'tile leaked outside #board after mobile resize');
+    assert.equal(layoutOk.tilesInside, true, `tile leaked outside #board at ${vp.width}x${vp.height}`);
+    assert.equal(layoutOk.noScroll, true, `page became scrollable at ${vp.width}x${vp.height}`);
+    assert.equal(layoutOk.footerVisible, true, `footer not visible in single screen at ${vp.width}x${vp.height}`);
+  }
 
   // verify rapid ai toggle + reset safety
   await page.click('#ai-btn');
@@ -146,12 +155,18 @@ try {
     assert.equal(r.status(), 404, `non-runtime path should 404 on prod: ${blockedPath}`);
   }
 
-  // verify nested 404 route renders styled 404 page cleanly
+  // verify nested 404 route renders styled 404 page with exact title and global footer in single screen
   const resp404 = await page.goto(`${baseUrl}/nonexistent/nested`, { waitUntil: 'networkidle' });
   assert.equal(resp404.status(), 404);
+  assert.equal(await page.title(), '404 not found | 2048-ai');
   assert.equal(await page.textContent('.error-hero-num'), '404');
-  const cssLoaded404 = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
-  assert.ok(cssLoaded404 && cssLoaded404 !== 'rgba(0, 0, 0, 0)', '404 stylesheet failed to apply');
+  const ok404 = await page.evaluate(() => {
+    const bg = getComputedStyle(document.body).backgroundColor;
+    const footer = document.querySelector('footer.footer');
+    const doc = document.documentElement;
+    return Boolean(bg && bg !== 'rgba(0, 0, 0, 0)' && footer && footer.textContent.includes('Created by Mahesh Kakde') && doc.scrollHeight <= doc.clientHeight);
+  });
+  assert.equal(ok404, true, '404 stylesheet, single-screen fit, or global footer failed');
 
   assert.deepEqual(badResponses, []);
   assert.deepEqual(pageErrors, []);

@@ -18,115 +18,128 @@
   <title>2048-ai | Mahesh Kakde</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:opsz,wght@17..18,400..700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <div class="version-tag">v4.0.2</div>
+  <span class="version-tag">v4.1.0</span>
 
-  <main class="container">
+  <div class="app-shell">
 
-    <header class="header">
-      <h1 class="title">2048<span class="title-accent">-ai</span></h1>
-      <div class="header-right">
-        <span class="latency-badge" id="latency-badge" title="ai move latency">-- ms</span>
-        <button type="button" class="btn-nerds" id="info-btn">info for nerds</button>
-      </div>
-    </header>
+    <main class="container">
 
-    <noscript>
-      <div class="noscript-banner" role="alert">javascript is required to play 2048 and run the webassembly ai engine. please enable javascript and reload this page.</div>
-    </noscript>
+      <header class="brand-bar">
+        <h1 class="title">2048 <span class="title-accent">AI</span></h1>
+      </header>
 
-    <div class="scores">
-      <div class="score-box">
-        <span class="score-label">score</span>
-        <span class="score-value" id="score">0</span>
-      </div>
-      <div class="score-box">
-        <span class="score-label">best</span>
-        <span class="score-value" id="best">0</span>
-      </div>
-    </div>
+      <section class="board-stage" aria-label="2048 game board">
+        <div class="board-wrapper">
+          <div class="board" id="board">
+            <div class="cell" data-row="0" data-col="0"></div>
+            <div class="cell" data-row="0" data-col="1"></div>
+            <div class="cell" data-row="0" data-col="2"></div>
+            <div class="cell" data-row="0" data-col="3"></div>
+            <div class="cell" data-row="1" data-col="0"></div>
+            <div class="cell" data-row="1" data-col="1"></div>
+            <div class="cell" data-row="1" data-col="2"></div>
+            <div class="cell" data-row="1" data-col="3"></div>
+            <div class="cell" data-row="2" data-col="0"></div>
+            <div class="cell" data-row="2" data-col="1"></div>
+            <div class="cell" data-row="2" data-col="2"></div>
+            <div class="cell" data-row="2" data-col="3"></div>
+            <div class="cell" data-row="3" data-col="0"></div>
+            <div class="cell" data-row="3" data-col="1"></div>
+            <div class="cell" data-row="3" data-col="2"></div>
+            <div class="cell" data-row="3" data-col="3"></div>
+          </div>
 
-    <div class="board-wrapper">
-      <div class="board" id="board">
-        <div class="cell" data-row="0" data-col="0"></div>
-        <div class="cell" data-row="0" data-col="1"></div>
-        <div class="cell" data-row="0" data-col="2"></div>
-        <div class="cell" data-row="0" data-col="3"></div>
-        <div class="cell" data-row="1" data-col="0"></div>
-        <div class="cell" data-row="1" data-col="1"></div>
-        <div class="cell" data-row="1" data-col="2"></div>
-        <div class="cell" data-row="1" data-col="3"></div>
-        <div class="cell" data-row="2" data-col="0"></div>
-        <div class="cell" data-row="2" data-col="1"></div>
-        <div class="cell" data-row="2" data-col="2"></div>
-        <div class="cell" data-row="2" data-col="3"></div>
-        <div class="cell" data-row="3" data-col="0"></div>
-        <div class="cell" data-row="3" data-col="1"></div>
-        <div class="cell" data-row="3" data-col="2"></div>
-        <div class="cell" data-row="3" data-col="3"></div>
-      </div>
-
-      <div class="game-message" id="game-message">
-        <p id="message-text">game over</p>
-        <button type="button" class="btn" id="retry-btn">try again</button>
-      </div>
-    </div>
-
-    <div class="decision-hud" id="decision-hud">
-      <div class="hud-grid">
-        <div class="hud-dir" data-dir="0" id="hud-dir-up">
-          <span class="hud-label">up</span>
-          <span class="hud-val" id="hud-val-up">&mdash;</span>
-          <span class="hud-prob" id="hud-prob-up"></span>
+          <div class="game-message" id="game-message">
+            <p id="message-text">game over</p>
+            <button type="button" class="btn" id="retry-btn">try again</button>
+          </div>
         </div>
-        <div class="hud-dir" data-dir="1" id="hud-dir-right">
-          <span class="hud-label">right</span>
-          <span class="hud-val" id="hud-val-right">&mdash;</span>
-          <span class="hud-prob" id="hud-prob-right"></span>
+      </section>
+
+      <div class="side-panel">
+        <div class="panel-header">
+          <button type="button" class="btn-nerds" id="info-btn">info for nerds</button>
         </div>
-        <div class="hud-dir" data-dir="2" id="hud-dir-down">
-          <span class="hud-label">down</span>
-          <span class="hud-val" id="hud-val-down">&mdash;</span>
-          <span class="hud-prob" id="hud-prob-down"></span>
+
+        <noscript>
+          <div class="noscript-banner" role="alert">javascript is required to play 2048 and run the webassembly ai engine.</div>
+        </noscript>
+
+        <div class="scores">
+          <div class="score-box score-box-current">
+            <span class="score-label">score</span>
+            <span class="score-value" id="score">0</span>
+          </div>
+          <div class="score-box score-box-best">
+            <span class="score-label">best</span>
+            <span class="score-value" id="best">0</span>
+          </div>
         </div>
-        <div class="hud-dir" data-dir="3" id="hud-dir-left">
-          <span class="hud-label">left</span>
-          <span class="hud-val" id="hud-val-left">&mdash;</span>
-          <span class="hud-prob" id="hud-prob-left"></span>
+
+        <div class="decision-hud" id="decision-hud">
+          <div class="hud-header">
+            <h2 class="hud-heading">ai lookahead</h2>
+            <span class="latency-badge" id="latency-badge" title="ai move latency">-- ms</span>
+          </div>
+          <div class="hud-grid">
+            <div class="hud-dir" data-dir="0" id="hud-dir-up">
+              <span class="hud-label">up</span>
+              <span class="hud-val" id="hud-val-up">&mdash;</span>
+              <span class="hud-prob" id="hud-prob-up"></span>
+            </div>
+            <div class="hud-dir" data-dir="1" id="hud-dir-right">
+              <span class="hud-label">right</span>
+              <span class="hud-val" id="hud-val-right">&mdash;</span>
+              <span class="hud-prob" id="hud-prob-right"></span>
+            </div>
+            <div class="hud-dir" data-dir="2" id="hud-dir-down">
+              <span class="hud-label">down</span>
+              <span class="hud-val" id="hud-val-down">&mdash;</span>
+              <span class="hud-prob" id="hud-prob-down"></span>
+            </div>
+            <div class="hud-dir" data-dir="3" id="hud-dir-left">
+              <span class="hud-label">left</span>
+              <span class="hud-val" id="hud-val-left">&mdash;</span>
+              <span class="hud-prob" id="hud-prob-left"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="controls">
+          <button type="button" class="btn btn-primary btn-ai" id="ai-btn">let ai play</button>
+          <button type="button" class="btn btn-speed" id="speed-btn">speed: normal</button>
+          <button type="button" class="btn btn-new" id="new-game-btn">new game</button>
+        </div>
+
+        <div class="status-banner" id="status-banner" role="status" aria-live="polite">
+          <span class="status-text" id="status-text"></span>
+          <button type="button" class="status-close" id="status-close" aria-label="dismiss notice">x</button>
         </div>
       </div>
-    </div>
 
-    <div class="controls">
-      <button type="button" class="btn btn-primary" id="ai-btn">let ai play</button>
-      <button type="button" class="btn" id="speed-btn">speed: normal</button>
-      <button type="button" class="btn" id="new-game-btn">new game</button>
-    </div>
+    </main>
 
-    <div class="status-banner" id="status-banner" role="status" aria-live="polite">
-      <span class="status-text" id="status-text"></span>
-      <button type="button" class="status-close" id="status-close" aria-label="dismiss notice">x</button>
-    </div>
+    <footer class="footer">
+      <span>Created by <a href="https://maheshkakde.com" target="_blank" rel="noopener noreferrer">Mahesh Kakde</a></span>
+      <span class="footer-sep" aria-hidden="true">&middot;</span>
+      <a href="https://github.com/mahesh-kakde/2048-ai" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </footer>
 
-  </main>
-
-  <footer class="footer">
-    <span>built by <a href="https://maheshkakde.com" target="_blank" rel="noopener noreferrer">mahesh kakde</a></span>
-    <span class="footer-sep">&middot;</span>
-    <a href="https://github.com/mahesh-kakde" target="_blank" rel="noopener noreferrer">github</a>
-  </footer>
+  </div>
 
   <div class="modal-overlay" id="modal-overlay" role="dialog" aria-modal="true" aria-label="project information" aria-hidden="true">
     <div class="modal" id="modal">
-      <button type="button" class="btn-icon modal-close" id="modal-close" aria-label="close modal">x</button>
-      
-      <div class="modal-tabs" role="tablist" aria-label="information sections">
-        <button type="button" class="modal-tab active" role="tab" id="tab-btn-benchmark" aria-selected="true" aria-controls="tab-benchmark" tabindex="0" data-tab="benchmark">personal benchmark</button>
-        <button type="button" class="modal-tab" role="tab" id="tab-btn-technical" aria-selected="false" aria-controls="tab-technical" tabindex="-1" data-tab="technical">technical notes</button>
+      <div class="modal-top">
+        <div class="modal-tabs" role="tablist" aria-label="information sections">
+          <button type="button" class="modal-tab active" role="tab" id="tab-btn-benchmark" aria-selected="true" aria-controls="tab-benchmark" tabindex="0" data-tab="benchmark">personal benchmark</button>
+          <button type="button" class="modal-tab" role="tab" id="tab-btn-technical" aria-selected="false" aria-controls="tab-technical" tabindex="-1" data-tab="technical">technical notes</button>
+        </div>
+        <button type="button" class="btn-icon modal-close" id="modal-close" aria-label="close modal">x</button>
       </div>
 
       <div class="modal-tab-content active" id="tab-benchmark" role="tabpanel" aria-labelledby="tab-btn-benchmark" aria-hidden="false">
@@ -144,31 +157,29 @@
           </figure>
         </div>
 
-        <p>the benchmark to reach: <strong>144,868 points</strong>. in version 4, my goal is consistent 8k+ games and reaching 16,384 and 32,768 tiles.</p>
+        <p>benchmark surpassed: <strong>version 4 peaked at 361,092 points</strong> with a <strong>16,384 tile</strong> across 100 benchmark games (61% 8k+ rate, 128,849 avg score) -- supporting up to 65,536+ in its 128-bit engine.</p>
       </div>
 
       <div class="modal-tab-content" id="tab-technical" role="tabpanel" aria-labelledby="tab-btn-technical" aria-hidden="true">
         <h2>technical notes</h2>
-        
+
         <h3>engine evolution</h3>
-        <p><strong>version 1:</strong> expectimax lookahead backed by a tensorflow.js neural network board evaluator. in-browser inference was heavy (&gt;100ms per move), bottlenecking search tree depth.</p>
-        <p><strong>version 2:</strong> replaced tensorflow.js with a pure javascript matrix engine (&lt;0.03ms). but performance dropped to ~512 average tile -- scalar mse regression lost spatial board topology, and shallow depth 2 lookahead was vulnerable to tactical traps.</p>
-        <p><strong>version 3:</strong> n-tuple network trained via temporal difference learning (td) across 100,000 self-play games on kaggle.</p>
-        <p><strong>version 4 (current):</strong> <strong>compiled webassembly bitboard expectimax</strong> with 16-bit monotonic row/column score maps, hard perimeter anchor invariants, and 64-bit zobrist transposition caching (&gt;10,000 nodes/sec in-browser lookahead, reaching 16,384 and 32,768 tiles).</p>
-        
+        <p><strong>version 1:</strong> expectimax lookahead backed by a tensorflow.js neural network board evaluator. in-browser inference took ~5,000ms+ per move due to tensor allocation overhead, bottlenecking search tree depth.</p>
+        <p><strong>version 2:</strong> replaced tensorflow.js with a pure javascript matrix engine (&lt;0.03ms forward pass, 12-25ms/move). performance dropped to 2,098 avg score (max 512 tile, modal 128) -- scalar mse regression lost spatial board topology, and depth 2-3 lookahead fell into tactical traps.</p>
+        <p><strong>version 3:</strong> 32-symmetric n-tuple network trained via temporal difference learning (td) across 100,000 self-play games on kaggle, reaching 90% 2,048+ and 73,128 peak score (~5.6ms/move).</p>
+        <p><strong>version 4 (current):</strong> <strong>compiled webassembly 128-bit bitboard expectimax</strong> with 16-bit monotonic score maps, hard perimeter anchor invariants, and 64-bit zobrist transposition caching -- evaluating millions of leaf nodes/sec to reach 16,384 tiles in benchmarks (361,092 peak score; 8-bit cells scale to 65,536+).</p>
+
         <ul class="modal-list">
-          <li><strong>compiled webassembly (c)</strong>: sub-millisecond bitboard search executing millions of evaluations per second in-browser.</li>
-          <li><strong>16-bit monotonic score maps</strong>: 65,536-entry precomputed row and column evaluation tables rewarding monotonic gradients and merge pairs.</li>
+          <li><strong>compiled webassembly (c)</strong>: 128-bit bitboard engine executing millions of leaf evaluations per second in-browser (16-bit row lookup tables up to 32,768, 8-bit fallback for 65,536+).</li>
+          <li><strong>16-bit monotonic score maps</strong>: 65,536-entry precomputed row evaluation table (transposed for columns) rewarding monotonic gradients, merge pairs, and corner anchors with a 12x break penalty.</li>
           <li><strong>hard perimeter anchor invariants</strong>: topological protection locking the highest tile to its established corner anchor via 4-corner symmetry rotation.</li>
           <li><strong>64-bit zobrist transposition table</strong>: 131,072-entry cache avoiding redundant search tree exploration.</li>
-          <li><strong>depth 5-6 expectimax</strong>: deep forward lookahead with selective chance pruning (&lt;10ms latency).</li>
-          <li><strong>real-time decision telemetry</strong>: live softmax probability distribution and lookahead stats.</li>
+          <li><strong>depth 5-6 expectimax</strong>: deep forward lookahead (depth 3-4 in javascript fallback) with selective chance pruning (0.0001 cutoff, ~23.7ms avg latency across 100 full games).</li>
+          <li><strong>real-time decision telemetry</strong>: live move latency and largest-remainder normalized softmax probability distribution across valid directions.</li>
         </ul>
 
         <h3>built with</h3>
         <p>webassembly (c), vanilla javascript, html5/css3.</p>
-
-        <p><a href="https://github.com/mahesh-kakde/2048-ai" target="_blank" rel="noopener noreferrer">github &rarr;</a></p>
       </div>
 
     </div>
