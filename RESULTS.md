@@ -84,10 +84,10 @@ symmetric n-tuple network with td reinforcement learning and expectimax search:
 ## model v4
 
 compiled webassembly bitboard expectimax with 16-bit monotonic row/column score maps:
-- architecture: 64-bit integer bitboard representation (4 bits per cell exponent), 16-bit precomputed slide and score map lookup tables (65,536 entries each)
+- architecture: 128-bit integer bitboard representation (two 64-bit integers, 8 bits per cell exponent supporting 65,536+ tiles), 16-bit precomputed slide and score map lookup tables fast path (65,536 entries each for tiles <= 32,768, 8-bit fallback above)
 - evaluation function: positional 16-bit monotonic score maps combining exponential tile scores (r << r), monotonic ordering gradients with 12x break penalties, and merge pair bonuses
-- invariants: hard perimeter anchor protection locking highest tiles to top-left corner
-- search strategy: depth 5-6 expectimax search (depth 5 for open boards > 4 empty cells, depth 6 for tight boards <= 4 empty cells), 64-bit zobrist transposition caching (131,072 entries), and selective chance-node pruning (threshold 0.0001)
+- invariants: hard perimeter anchor protection locking highest tiles to their established corner anchor via 4-corner symmetry rotation
+- search strategy: depth 5-6 expectimax search in wasm (depth 5 for open boards > 4 empty cells, depth 6 for tight boards <= 4 empty cells; depth 3-4 in js fallback), 64-bit zobrist transposition caching (131,072 entries), and selective chance-node pruning (threshold 0.0001)
 - continuous evaluation (100 games):
   - games played: 100
   - mean score: 128,849
@@ -124,7 +124,7 @@ compiled webassembly bitboard expectimax with 16-bit monotonic row/column score 
 | model v1 | 19,800+ | ~18,200 | 60,000+ | 4096 | 34.0% | 0.0% | 0.0% | ~5,000ms+ | tensorflow.js mlp (548k states) |
 | model v2 | 2,098 | 1,496 | 7,232 | 512 | 0.0% | 0.0% | 0.0% | ~12-25ms | pure js matrix mlp (47m states) |
 | model v3 | 38,406 | 36,436 | 73,128 | 4096 | 90.0% | 0.0% | 0.0% | ~5.6ms | 32-symmetric n-tuple (100k games) |
-| model v4 | 128,849 | 125,514 | 361,092 | 16384 | 99.0% | 61.0% | 13.0% | ~23.7ms | wasm bitboard expectimax + 16-bit score maps |
+| model v4 | 128,849 | 125,514 | 361,092 | 16384 | 99.0% | 61.0% | 13.0% | ~23.7ms | wasm 128-bit bitboard expectimax + 16-bit score maps |
 
 ---
 

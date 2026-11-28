@@ -34,7 +34,7 @@ play 2048 with keyboard arrow keys or touch swipes on mobile, or hand control ov
 
 - webassembly (c search engine, compiled with `zig 0.17.1` to `wasm/engine.<hash>.wasm`)
 - vanilla javascript (bitboard engine, expectimax search, ui)
-- html5 + css3 (responsive single-page layout, wcag 2.1 aa contrast, aria dialog/tablist)
+- html5 + css3 (responsive single-page layout, google sans typography, wcag 2.1 aa contrast, aria dialog/tablist)
 - vercel static deployment (`node scripts/build_dist.js` -> `dist/`) + github actions ci
 
 ## how to run locally
@@ -61,6 +61,7 @@ play 2048 with keyboard arrow keys or touch swipes on mobile, or hand control ov
    npm run lint
    npm run build
    npm test
+   npm run test:e2e
    ```
 
 4. play with arrow keys or press "let ai play" to watch the ai.
@@ -83,11 +84,11 @@ board evaluations at leaf nodes are computed using **16-bit monotonic score maps
 | model v1 | 19,800+ | ~18,200 | 60,000+ | 4096 | 34.0% | ~5,000ms+ | tensorflow.js mlp (548k states) |
 | model v2 | 2,098 | 1,496 | 7,232 | 512 | 0.0% | ~12-25ms | pure js matrix mlp (47m states) |
 | model v3 | 38,406 | 36,436 | 73,128 | 4096 | 90.0% | ~5.6ms | 32-symmetric n-tuple (100k games) |
-| model v4 | 128,849 | 125,514 | 361,092 | 16384 | 99.0% | ~23.7ms | wasm bitboard expectimax + 16-bit score maps |
+| model v4 | 128,849 | 125,514 | 361,092 | 16384 | 99.0% | ~23.7ms | wasm 128-bit bitboard expectimax + 16-bit score maps |
 
 ## live demo
 
-[2048.maheshkakde.com](https://2048.maheshkakde.com) (canonical subdomain only; no `www` subdomain)
+[2048.maheshkakde.com](https://2048.maheshkakde.com)
 
 ## license
 
