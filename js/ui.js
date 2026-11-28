@@ -24,13 +24,8 @@ const UI = (() => {
   function create_tile_el(row, col, value) {
     const el = document.createElement('div');
     el.className = 'tile';
-    if (value > 2048) {
-      if (value === 4096) el.classList.add('tile-4096');
-      else if (value === 8192) el.classList.add('tile-8192');
-      else if (value === 16384) el.classList.add('tile-16384');
-      else if (value === 32768) el.classList.add('tile-32768');
-      else if (value === 65536) el.classList.add('tile-65536');
-      else el.classList.add('tile-super');
+    if (value > 65536) {
+      el.classList.add('tile-super');
     }
     el.setAttribute('data-value', value);
     el.textContent = value;
@@ -116,6 +111,7 @@ const UI = (() => {
       set_tile_position(el, tr, tc);
 
       if (m.merged) {
+        el.classList.add('tile-retiring');
         el.style.zIndex = '9';
         new_retiring.push(el);
       } else {
@@ -377,5 +373,29 @@ const UI = (() => {
     update_decision_hud
   };
 })();
+
+// force immediate tile coordinate recalculation when viewport/media breakpoints change
+if (typeof window !== 'undefined' && typeof window.addEventListener === 'function' && typeof document !== 'undefined') {
+  window.addEventListener('resize', () => {
+    const board = document.getElementById('board');
+    const wrap = board && board.parentElement;
+    if (!wrap) return;
+    wrap.classList.add('board-resizing');
+    void wrap.offsetWidth;
+    const tiles = wrap.querySelectorAll('.tile');
+    for (let i = 0; i < tiles.length; i++) {
+      const t = tiles[i];
+      const r = t.style.getPropertyValue('--row');
+      const c = t.style.getPropertyValue('--col');
+      t.style.setProperty('--row', '-1');
+      t.style.setProperty('--col', '-1');
+      void t.offsetWidth;
+      t.style.setProperty('--row', r);
+      t.style.setProperty('--col', c);
+    }
+    void wrap.offsetWidth;
+    wrap.classList.remove('board-resizing');
+  });
+}
 
 if (typeof window !== 'undefined') window.UI = UI;

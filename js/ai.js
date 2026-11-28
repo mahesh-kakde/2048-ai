@@ -125,10 +125,6 @@ function get_search_depth_wasm(board) {
   return empty <= 4 ? 6 : 5;
 }
 
-function encode_board_bitboard(board) {
-  return board_to_bitboard(board);
-}
-
 function rank_tile_score(r) {
   return r === 0 ? 0 : (r * Math.pow(2, r));
 }
@@ -190,8 +186,6 @@ function evaluate_board(board) {
 
   return total_score;
 }
-
-const heuristic_evaluate = evaluate_board;
 
 function get_search_depth(board) {
   const empty = get_empty_cells(board).length;
@@ -276,7 +270,9 @@ function expectimax_chance(board, depth, prob) {
     }
   }
 
-  return weight_sum > 0 ? (avg / weight_sum) : evaluate_board(board);
+  if (weight_sum > 0) return avg / weight_sum;
+  nodes_evaluated++;
+  return evaluate_board(board);
 }
 
 const CORNER_DIR_MAP = [

@@ -133,8 +133,13 @@ const Game = (() => {
 
     board = result.board;
     score += result.score;
-    if (ai_playing) telemetry_state.moves_ai++;
-    else telemetry_state.moves_human++;
+    if (ai_playing) {
+      telemetry_state.moves_ai++;
+    } else {
+      telemetry_state.moves_human++;
+      if (typeof UI.update_latency === 'function') UI.update_latency(null);
+      if (typeof UI.update_decision_hud === 'function') UI.update_decision_hud(null);
+    }
 
     const s = spawn(board);
     board = s.board;
@@ -199,7 +204,7 @@ const Game = (() => {
     if (!modal_el || typeof modal_el.querySelectorAll !== 'function') return;
     const focusables = Array.from(
       modal_el.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')
-    ).filter(el => !el.disabled && (!el.getClientRects || el.getClientRects().length > 0));
+    ).filter(el => !el.disabled && (!el.getAttribute || el.getAttribute('tabindex') !== '-1') && (!el.getClientRects || el.getClientRects().length > 0));
     if (focusables.length === 0) return;
 
     const first = focusables[0];

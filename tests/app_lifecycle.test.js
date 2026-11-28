@@ -101,10 +101,24 @@ test('UI uses CSS grid variables, slides tiles cleanly without leaks, and separa
   assert.ok(activeDomTiles[0].style.getPropertyValue('--row') !== '');
   assert.ok(activeDomTiles[0].style.getPropertyValue('--col') !== '');
 
+  ctx.UI.update_latency(12);
   ctx.UI.update_decision_hud({ up: 500, right: -6e9, down: null, left: -2e6, best_dir: 0 });
   assert.equal(dom.getEl('hud-val-right').textContent, 'danger');
   assert.equal(dom.getEl('hud-val-down').textContent, 'blocked');
   assert.notEqual(dom.getEl('hud-val-left').textContent, 'danger');
+
+  // merged slide tiles get .tile-retiring during animation, and human moves clear stale AI telemetry
+  ctx.UI.render([[4, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], null, [[0, 0]], [
+    { from: [0, 0], to: [0, 0], value: 2, merged: true },
+    { from: [0, 1], to: [0, 0], value: 2, merged: true }
+  ]);
+  assert.equal(wrapperEl.children.filter(c => c.classList.contains('tile-retiring')).length, 2);
+  timers.flushAll();
+  assert.equal(wrapperEl.children.filter(c => c.classList.contains('tile-retiring')).length, 0);
+
+  for (let d = 0; d < 4; d++) ctx.Game.do_move(d);
+  assert.equal(dom.getEl('hud-val-up').textContent, '—');
+  assert.equal(dom.getEl('latency-badge').textContent, '-- ms');
 
   const css = fs.readFileSync(path.join(ROOT, 'style.css'), 'utf8');
   assert.match(css, /\.tile\s*\{[\s\S]*left:\s*calc\(var\(--cell-gap\)\s*\+\s*var\(--col/);
