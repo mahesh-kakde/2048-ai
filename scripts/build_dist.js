@@ -31,6 +31,13 @@ function buildDist(outDir = path.join(ROOT, 'dist'), rootDir = ROOT) {
     'index.html',
     '404.html',
     'style.css',
+    'robots.txt',
+    'manifest.webmanifest',
+    'sw.js',
+    'og-image.png',
+    'apple-touch-icon.png',
+    'icon-192.png',
+    'icon-512.png',
     'high-score-1.webp',
     'high-score-2.webp',
     'js/game.js',
@@ -42,13 +49,6 @@ function buildDist(outDir = path.join(ROOT, 'dist'), rootDir = ROOT) {
 
   for (const rel of requiredFiles) {
     copyRelFile(rootDir, outDir, rel);
-  }
-
-  // optional root metadata files populated in later chunks
-  for (const rel of ['robots.txt', 'manifest.webmanifest']) {
-    if (fs.existsSync(path.join(rootDir, rel))) {
-      copyRelFile(rootDir, outDir, rel);
-    }
   }
 
   return requiredFiles;

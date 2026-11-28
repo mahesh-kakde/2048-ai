@@ -226,3 +226,20 @@ test('modal open blocks arrow keys and board-scoped swipes from mutating game st
   dom.listeners['board-wrapper:touchend']({ changedTouches: [{ clientX: 50, clientY: 200 }] });
   assert.equal(ctx.window.Telemetry.get_report().moves_human, 0);
 });
+
+test('service worker registers /sw.js cleanly without surfacing async errors on rejection', async () => {
+  const registeredPaths = [];
+  const { ctx } = loadFullApp({
+    navigatorImpl: {
+      serviceWorker: {
+        register: (p) => {
+          registeredPaths.push(p);
+          return Promise.reject(new Error('offline registration test'));
+        }
+      }
+    }
+  });
+  await new Promise(resolve => setTimeout(resolve, 25));
+  assert.deepEqual(registeredPaths, ['/sw.js']);
+  assert.equal(ctx.window.Telemetry.get_report().error_count, 0);
+});

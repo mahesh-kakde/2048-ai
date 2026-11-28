@@ -462,6 +462,12 @@ const Game = (() => {
         report_error('wasm_init_error', err);
       });
     }
+
+    if (typeof navigator !== 'undefined' && navigator && 'serviceWorker' in navigator && typeof navigator.serviceWorker.register === 'function') {
+      try {
+        Promise.resolve(navigator.serviceWorker.register('/sw.js')).catch(() => {});
+      } catch (_) {}
+    }
   }
 
   function get_telemetry() {

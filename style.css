@@ -869,6 +869,18 @@ body.error-body {
   line-height: 1;
 }
 
+.noscript-banner {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  background: #7f1d1d;
+  color: #ffffff;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  line-height: 1.45;
+  text-align: center;
+}
+
 /* -- responsive -- */
 
 @media (max-width: 640px) {
