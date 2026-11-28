@@ -26,6 +26,30 @@ const Game = (() => {
   let game_over = false;
   let input_locked = false;
   let ai_playing = false;
+  let ai_timer_id = null;
+  let game_over_timer_id = null;
+  let input_lock_timer_id = null;
+
+  function clear_ai_timer() {
+    if (ai_timer_id !== null) {
+      clearTimeout(ai_timer_id);
+      ai_timer_id = null;
+    }
+  }
+
+  function clear_game_over_timer() {
+    if (game_over_timer_id !== null) {
+      clearTimeout(game_over_timer_id);
+      game_over_timer_id = null;
+    }
+  }
+
+  function clear_input_lock_timer() {
+    if (input_lock_timer_id !== null) {
+      clearTimeout(input_lock_timer_id);
+      input_lock_timer_id = null;
+    }
+  }
 
   const ai_btn = document.getElementById('ai-btn');
   const speed_btn = document.getElementById('speed-btn');
@@ -40,8 +64,12 @@ const Game = (() => {
     if (!result.moved) return;
 
     if (!ai_playing) {
+      clear_input_lock_timer();
       input_locked = true;
-      setTimeout(() => { input_locked = false; }, 150);
+      input_lock_timer_id = setTimeout(() => {
+        input_lock_timer_id = null;
+        input_locked = false;
+      }, 150);
     }
 
     board = result.board;
@@ -61,13 +89,18 @@ const Game = (() => {
 
     if (is_game_over(board)) {
       game_over = true;
-      setTimeout(() => {
-        UI.show_message('game over');
+      clear_game_over_timer();
+      game_over_timer_id = setTimeout(() => {
+        game_over_timer_id = null;
+        if (game_over) UI.show_message('game over');
       }, 300);
     }
   }
 
   function new_game() {
+    clear_ai_timer();
+    clear_game_over_timer();
+    clear_input_lock_timer();
     board = create_board();
     score = 0;
     game_over = false;
@@ -134,16 +167,26 @@ const Game = (() => {
   function toggle_ai() {
     if (typeof ai_best_move !== 'function') return;
 
-    ai_playing = !ai_playing;
-    ai_btn.textContent = ai_playing ? 'stop ai' : 'let ai play';
-    if (!ai_playing) {
+    clear_ai_timer();
+    clear_input_lock_timer();
+    input_locked = false;
+
+    if (ai_playing) {
+      ai_playing = false;
+      ai_btn.textContent = 'let ai play';
       if (typeof UI.update_latency === 'function') UI.update_latency(null);
+      return;
     }
 
-    if (ai_playing) ai_step();
+    if (game_over) return;
+
+    ai_playing = true;
+    ai_btn.textContent = 'stop ai';
+    ai_step();
   }
 
   function ai_step() {
+    clear_ai_timer();
     if (!ai_playing || game_over) {
       ai_playing = false;
       ai_btn.textContent = 'let ai play';
@@ -169,8 +212,15 @@ const Game = (() => {
     }
 
     do_move(dir);
+    if (!ai_playing || game_over) {
+      ai_playing = false;
+      ai_btn.textContent = 'let ai play';
+      if (typeof UI.update_latency === 'function') UI.update_latency(null);
+      return;
+    }
+
     const delay = turbo_mode ? 40 : 200;
-    setTimeout(ai_step, delay);
+    ai_timer_id = setTimeout(ai_step, delay);
   }
 
   function init() {

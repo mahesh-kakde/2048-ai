@@ -28,6 +28,7 @@ typedef struct {
 typedef struct {
     uint64_t key;
     double value;
+    float prob;
     int8_t depth;
     uint8_t age;
 } tt_entry_t;
@@ -383,7 +384,8 @@ static double expectimax_max(board_t b, int depth, double prob) {
     uint32_t tt_idx = (uint32_t)(hash & TT_MASK);
     tt_entry_t *entry = &transposition_table[tt_idx];
 
-    if (entry->key == hash && entry->depth >= depth) {
+    if (entry->key == hash && entry->depth >= depth &&
+        (double)entry->prob >= prob * (1.0 - 1e-6)) {
         tt_hits_count++;
         return entry->value;
     }
@@ -407,15 +409,17 @@ static double expectimax_max(board_t b, int depth, double prob) {
     double final_val = has_valid_move ? best : evaluate_board_bb(b);
 
     if (entry->key == hash) {
-        if (depth >= entry->depth) {
+        if (depth > entry->depth || (depth == entry->depth && prob > (double)entry->prob)) {
             entry->depth = (int8_t)depth;
             entry->value = final_val;
+            entry->prob = (float)prob;
             entry->age = current_search_age;
         }
     } else if (entry->age != current_search_age || depth >= entry->depth) {
         entry->key = hash;
         entry->depth = (int8_t)depth;
         entry->value = final_val;
+        entry->prob = (float)prob;
         entry->age = current_search_age;
     }
 
@@ -565,6 +569,7 @@ int wasm_init(void) {
     for (int i = 0; i < TT_SIZE; i++) {
         transposition_table[i].key = 0;
         transposition_table[i].value = 0.0;
+        transposition_table[i].prob = 0.0f;
         transposition_table[i].depth = 0;
         transposition_table[i].age = 0;
     }
