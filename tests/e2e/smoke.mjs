@@ -60,13 +60,29 @@ try {
   const consoleErrors = [];
   const pageErrors = [];
   const badResponses = [];
+  const blockedPaths = ['/wasm/engine.c', '/package.json', '/README.md', '/RESULTS.md', '/tests/game.test.js'];
+  const isExpected404Url = (u) => {
+    try {
+      const p = new URL(u).pathname;
+      return p === '/nonexistent/nested' || blockedPaths.includes(p);
+    } catch {
+      return false;
+    }
+  };
+  let checkingExpected404 = false;
+
   page.on('console', (msg) => {
-    if (msg.type() === 'error') consoleErrors.push(msg.text());
+    if (msg.type() !== 'error') return;
+    const locUrl = msg.location ? msg.location().url : '';
+    if (checkingExpected404 && msg.text().includes('404') && (!locUrl || isExpected404Url(locUrl))) {
+      return;
+    }
+    consoleErrors.push(msg.text());
   });
   page.on('pageerror', (err) => pageErrors.push(String(err)));
   page.on('response', (res) => {
     const url = res.url();
-    if (url.startsWith(baseUrl) && !url.includes('/nonexistent/') && res.status() >= 400) {
+    if (url.startsWith(baseUrl) && res.status() >= 400 && !isExpected404Url(url)) {
       badResponses.push(`${res.status()} ${url}`);
     }
   });
@@ -150,23 +166,28 @@ try {
   assert.equal(await page.evaluate(() => Boolean(document.querySelector('noscript'))), true);
 
   // verify non-runtime files are not served from dist
-  for (const blockedPath of ['/wasm/engine.c', '/package.json', '/README.md', '/RESULTS.md', '/tests/game.test.js']) {
-    const r = await page.goto(`${baseUrl}${blockedPath}`);
-    assert.equal(r.status(), 404, `non-runtime path should 404 on prod: ${blockedPath}`);
-  }
+  checkingExpected404 = true;
+  try {
+    for (const blockedPath of blockedPaths) {
+      const r = await page.goto(`${baseUrl}${blockedPath}`);
+      assert.equal(r.status(), 404, `non-runtime path should 404 on prod: ${blockedPath}`);
+    }
 
-  // verify nested 404 route renders styled 404 page with exact title and global footer in single screen
-  const resp404 = await page.goto(`${baseUrl}/nonexistent/nested`, { waitUntil: 'networkidle' });
-  assert.equal(resp404.status(), 404);
-  assert.equal(await page.title(), '404 not found | 2048-ai');
-  assert.equal(await page.textContent('.error-hero-num'), '404');
-  const ok404 = await page.evaluate(() => {
-    const bg = getComputedStyle(document.body).backgroundColor;
-    const footer = document.querySelector('footer.footer');
-    const doc = document.documentElement;
-    return Boolean(bg && bg !== 'rgba(0, 0, 0, 0)' && footer && footer.textContent.includes('Created by Mahesh Kakde') && doc.scrollHeight <= doc.clientHeight);
-  });
-  assert.equal(ok404, true, '404 stylesheet, single-screen fit, or global footer failed');
+    // verify nested 404 route renders styled 404 page with exact title and global footer in single screen
+    const resp404 = await page.goto(`${baseUrl}/nonexistent/nested`, { waitUntil: 'networkidle' });
+    assert.equal(resp404.status(), 404);
+    assert.equal(await page.title(), '404 not found | 2048-ai');
+    assert.equal(await page.textContent('.error-hero-num'), '404');
+    const ok404 = await page.evaluate(() => {
+      const bg = getComputedStyle(document.body).backgroundColor;
+      const footer = document.querySelector('footer.footer');
+      const doc = document.documentElement;
+      return Boolean(bg && bg !== 'rgba(0, 0, 0, 0)' && footer && footer.textContent.includes('Created by Mahesh Kakde') && doc.scrollHeight <= doc.clientHeight);
+    });
+    assert.equal(ok404, true, '404 stylesheet, single-screen fit, or global footer failed');
+  } finally {
+    checkingExpected404 = false;
+  }
 
   assert.deepEqual(badResponses, []);
   assert.deepEqual(pageErrors, []);
