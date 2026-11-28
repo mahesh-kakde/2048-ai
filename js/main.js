@@ -50,8 +50,6 @@ const Game = (() => {
     const result = move(board, direction);
     if (!result.moved) return;
 
-    if (typeof NN !== 'undefined') NN.record_state(old_board, score, result.board, result.score);
-
     if (!ai_playing) {
       input_locked = true;
       setTimeout(() => { input_locked = false; }, 150);
@@ -77,7 +75,6 @@ const Game = (() => {
       game_over = true;
       setTimeout(() => {
         UI.show_message('game over');
-        if (typeof NN !== 'undefined') NN.on_game_over(score);
       }, 300);
     }
   }
@@ -91,7 +88,6 @@ const Game = (() => {
     ai_btn.textContent = 'let ai play';
     if (typeof UI.update_latency === 'function') UI.update_latency(null);
     if (typeof UI.update_decision_hud === 'function') UI.update_decision_hud(null);
-    if (typeof NN !== 'undefined') NN.reset_game();
     UI.hide_message();
     UI.update_score(0);
     UI.update_best(best);
@@ -220,6 +216,14 @@ const Game = (() => {
         if (target) target.classList.add('active');
       });
     });
+
+    // purge obsolete v3/v4 prototype storage left in returning visitors' browsers
+    try {
+      if (typeof indexedDB !== 'undefined') indexedDB.deleteDatabase('2048_ai_db');
+    } catch (_) {}
+    try {
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('2048-tuple-games-learned');
+    } catch (_) {}
 
     new_game();
   }

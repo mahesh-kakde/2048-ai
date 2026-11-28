@@ -432,24 +432,6 @@ body {
   font-weight: 700;
 }
 
-.hud-dir-tablebase {
-  background: #1b4d3e !important;
-  border-color: #34d399 !important;
-  box-shadow: 0 0 10px rgba(52, 211, 153, 0.35);
-}
-
-.hud-dir-tablebase .hud-label {
-  color: #a7f3d0 !important;
-}
-
-.hud-dir-tablebase .hud-val {
-  color: #d1fae5 !important;
-}
-
-.hud-dir-tablebase .hud-prob {
-  color: #6ee7b7 !important;
-}
-
 .hud-dir-invalid {
   opacity: 0.35;
 }

@@ -132,7 +132,7 @@ const UI = (() => {
       for (let d = 0; d < 4; d++) {
         const item = hud_dirs[d];
         if (!item || !item.el) continue;
-        item.el.classList.remove('hud-dir-best', 'hud-dir-invalid', 'hud-dir-danger', 'hud-dir-tablebase');
+        item.el.classList.remove('hud-dir-best', 'hud-dir-invalid', 'hud-dir-danger');
         if (item.val_el) item.val_el.textContent = '—';
         if (item.prob_el) item.prob_el.textContent = '';
       }
@@ -141,41 +141,36 @@ const UI = (() => {
 
     const vals = [telemetry.up, telemetry.right, telemetry.down, telemetry.left];
     const best_d = telemetry.best_dir;
-    const is_tablebase = telemetry.source && telemetry.source.startsWith('pdf-');
 
     // compute winning probability percentages
     const probs = [0, 0, 0, 0];
-    if (is_tablebase) {
-      if (best_d >= 0 && best_d < 4) probs[best_d] = 100;
-    } else {
-      let max_v = -Infinity;
-      let valid_count = 0;
+    let max_v = -Infinity;
+    let valid_count = 0;
+    for (let d = 0; d < 4; d++) {
+      const v = vals[d];
+      if (typeof v === 'number' && v > -1e6) {
+        if (v > max_v) max_v = v;
+        valid_count++;
+      }
+    }
+
+    if (valid_count > 0 && max_v > -Infinity) {
+      const weights = [0, 0, 0, 0];
+      let total_weight = 0;
+      const temp = Math.max(10, Math.abs(max_v) * 0.05);
       for (let d = 0; d < 4; d++) {
         const v = vals[d];
         if (typeof v === 'number' && v > -1e6) {
-          if (v > max_v) max_v = v;
-          valid_count++;
+          const diff = (v - max_v) / temp;
+          const w = Math.exp(Math.max(-20, diff));
+          weights[d] = w;
+          total_weight += w;
         }
       }
-
-      if (valid_count > 0 && max_v > -Infinity) {
-        const weights = [0, 0, 0, 0];
-        let total_weight = 0;
-        const temp = Math.max(10, Math.abs(max_v) * 0.05);
+      if (total_weight > 0) {
         for (let d = 0; d < 4; d++) {
-          const v = vals[d];
-          if (typeof v === 'number' && v > -1e6) {
-            const diff = (v - max_v) / temp;
-            const w = Math.exp(Math.max(-20, diff));
-            weights[d] = w;
-            total_weight += w;
-          }
-        }
-        if (total_weight > 0) {
-          for (let d = 0; d < 4; d++) {
-            if (weights[d] > 0) {
-              probs[d] = Math.round((weights[d] / total_weight) * 100);
-            }
+          if (weights[d] > 0) {
+            probs[d] = Math.round((weights[d] / total_weight) * 100);
           }
         }
       }
@@ -187,10 +182,8 @@ const UI = (() => {
       if (!item || !item.el) continue;
       const v = vals[d];
       const is_danger = typeof v === 'number' && v < -1e6;
-      const is_tb_hit = is_tablebase && d === best_d;
 
       item.el.classList.toggle('hud-dir-best', d === best_d);
-      item.el.classList.toggle('hud-dir-tablebase', is_tb_hit);
       item.el.classList.toggle('hud-dir-invalid', v === null || v === undefined);
       item.el.classList.toggle('hud-dir-danger', is_danger);
 
@@ -209,12 +202,8 @@ const UI = (() => {
       if (item.prob_el) {
         if (v === null || v === undefined) {
           item.prob_el.textContent = '';
-        } else if (is_tb_hit) {
-          item.prob_el.textContent = '100% win';
         } else if (is_danger) {
           item.prob_el.textContent = '0% (risk)';
-        } else if (is_tablebase) {
-          item.prob_el.textContent = 'alt';
         } else {
           item.prob_el.textContent = `${probs[d]}%`;
         }

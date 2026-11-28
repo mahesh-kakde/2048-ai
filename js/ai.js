@@ -64,10 +64,6 @@ let wasm_exports = null;
 let wasm_ready = false;
 let wasm_init_promise = null;
 
-function sync_tuple_weights(weights) {
-  return false;
-}
-
 async function init_wasm() {
   if (wasm_ready) return true;
   if (wasm_init_promise) return wasm_init_promise;
@@ -376,7 +372,6 @@ if (typeof window !== 'undefined') {
     best_move: ai_best_move,
     get_stats: get_last_search_stats,
     is_wasm_ready: () => wasm_ready,
-    init_wasm,
-    sync_tuple_weights
+    init_wasm
   };
 }
