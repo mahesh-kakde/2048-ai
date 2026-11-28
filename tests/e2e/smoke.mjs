@@ -109,6 +109,16 @@ try {
   assert.equal(await page.textContent('#score'), '0');
   assert.equal(await page.textContent('#ai-btn'), 'let ai play');
 
+  // verify aria modal dialog, focus restoration, and zero runtime telemetry errors
+  await page.click('#info-btn');
+  assert.equal(await page.getAttribute('#modal-overlay', 'aria-hidden'), 'false');
+  await page.keyboard.press('Escape');
+  assert.equal(await page.getAttribute('#modal-overlay', 'aria-hidden'), 'true');
+  assert.equal(await page.evaluate(() => document.activeElement && document.activeElement.id), 'info-btn');
+  const tel = await page.evaluate(() => window.Telemetry.get_report());
+  assert.equal(tel.error_count, 0);
+  assert.equal(tel.engine_mode, 'wasm');
+
   // verify nested 404 route renders styled 404 page cleanly
   const resp404 = await page.goto(`${baseUrl}/nonexistent/nested`, { waitUntil: 'networkidle' });
   assert.equal(resp404.status(), 404);

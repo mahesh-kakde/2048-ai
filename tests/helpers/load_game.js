@@ -92,6 +92,7 @@ function createDomMock() {
         c.parentElement = this;
         this.children.push(c);
       },
+      focus() { document.activeElement = this; },
       querySelector: () => ({ offsetLeft: 8, offsetTop: 8 }),
       querySelectorAll: () => []
     };
@@ -103,11 +104,22 @@ function createDomMock() {
 
   let tileSeq = 0;
   const document = {
+    activeElement: null,
     getElementById: getEl,
-    querySelectorAll: () => [],
+    querySelectorAll: (sel) => {
+      if (sel === '.modal-tab') return [getEl('tab-btn-benchmark'), getEl('tab-btn-technical')];
+      if (sel === '.modal-tab-content') return [getEl('tab-benchmark'), getEl('tab-technical')];
+      return [];
+    },
     addEventListener: (ev, fn) => { listeners['doc:' + ev] = fn; },
     createElement: (tag) => makeEl(`${tag}-${++tileSeq}`)
   };
+
+  const tab1 = getEl('tab-btn-benchmark');
+  const tab2 = getEl('tab-btn-technical');
+  tab1.setAttribute('data-tab', 'benchmark');
+  tab2.setAttribute('data-tab', 'technical');
+  getEl('modal').querySelectorAll = () => [getEl('modal-close'), tab1, tab2];
 
   return { document, getEl, listeners, makeEl };
 }

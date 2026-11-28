@@ -31,7 +31,7 @@
       <h1 class="title">2048<span class="title-accent">-ai</span></h1>
       <div class="header-right">
         <span class="latency-badge" id="latency-badge" title="ai move latency">-- ms</span>
-        <button class="btn-nerds" id="info-btn">info for nerds</button>
+        <button type="button" class="btn-nerds" id="info-btn">info for nerds</button>
       </div>
     </header>
 
@@ -68,7 +68,7 @@
 
       <div class="game-message" id="game-message">
         <p id="message-text">game over</p>
-        <button class="btn" id="retry-btn">try again</button>
+        <button type="button" class="btn" id="retry-btn">try again</button>
       </div>
     </div>
 
@@ -98,9 +98,9 @@
     </div>
 
     <div class="controls">
-      <button class="btn btn-primary" id="ai-btn">let ai play</button>
-      <button class="btn" id="speed-btn">speed: normal</button>
-      <button class="btn" id="new-game-btn">new game</button>
+      <button type="button" class="btn btn-primary" id="ai-btn">let ai play</button>
+      <button type="button" class="btn" id="speed-btn">speed: normal</button>
+      <button type="button" class="btn" id="new-game-btn">new game</button>
     </div>
 
     <div class="status-banner" id="status-banner" role="status" aria-live="polite">
@@ -116,16 +116,16 @@
     <a href="https://github.com/mahesh-kakde" target="_blank" rel="noopener noreferrer">github</a>
   </footer>
 
-  <div class="modal-overlay" id="modal-overlay">
+  <div class="modal-overlay" id="modal-overlay" role="dialog" aria-modal="true" aria-label="project information" aria-hidden="true">
     <div class="modal" id="modal">
-      <button class="btn-icon modal-close" id="modal-close" aria-label="close">x</button>
+      <button type="button" class="btn-icon modal-close" id="modal-close" aria-label="close modal">x</button>
       
-      <div class="modal-tabs">
-        <button class="modal-tab active" data-tab="benchmark">personal benchmark</button>
-        <button class="modal-tab" data-tab="technical">technical notes</button>
+      <div class="modal-tabs" role="tablist" aria-label="information sections">
+        <button type="button" class="modal-tab active" role="tab" id="tab-btn-benchmark" aria-selected="true" aria-controls="tab-benchmark" tabindex="0" data-tab="benchmark">personal benchmark</button>
+        <button type="button" class="modal-tab" role="tab" id="tab-btn-technical" aria-selected="false" aria-controls="tab-technical" tabindex="-1" data-tab="technical">technical notes</button>
       </div>
 
-      <div class="modal-tab-content active" id="tab-benchmark">
+      <div class="modal-tab-content active" id="tab-benchmark" role="tabpanel" aria-labelledby="tab-btn-benchmark" aria-hidden="false">
         <h2>personal benchmark: 144,868</h2>
         <p>i reached the 8,192 tile in 4,913 moves with a final score of 144,868. playing past 8k by hand requires thousands of consistent moves without a mistake, so i wanted to build an ai system that could play at this level and reach 16,384 and 32,768.</p>
 
@@ -143,7 +143,7 @@
         <p>the benchmark to reach: <strong>144,868 points</strong>. in version 4, my goal is consistent 8k+ games and reaching 16,384 and 32,768 tiles.</p>
       </div>
 
-      <div class="modal-tab-content" id="tab-technical">
+      <div class="modal-tab-content" id="tab-technical" role="tabpanel" aria-labelledby="tab-btn-technical" aria-hidden="true">
         <h2>technical notes</h2>
         
         <h3>engine evolution</h3>

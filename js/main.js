@@ -176,9 +176,47 @@ const Game = (() => {
     UI.render(board, null, null);
   }
 
+  let last_focused_el = null;
+
+  function close_modal() {
+    const modal_overlay = document.getElementById('modal-overlay');
+    if (!modal_overlay || !modal_overlay.classList.contains('active')) return;
+    modal_overlay.classList.remove('active');
+    modal_overlay.setAttribute('aria-hidden', 'true');
+    if (last_focused_el && typeof last_focused_el.focus === 'function') {
+      last_focused_el.focus();
+    }
+    last_focused_el = null;
+  }
+
+  function trap_modal_focus(e) {
+    const modal_el = document.getElementById('modal');
+    if (!modal_el || typeof modal_el.querySelectorAll !== 'function') return;
+    const focusables = Array.from(
+      modal_el.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')
+    ).filter(el => !el.disabled && (!el.getClientRects || el.getClientRects().length > 0));
+    if (focusables.length === 0) return;
+
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
+
   function handle_key(e) {
+    const modal_overlay = document.getElementById('modal-overlay');
+    const modal_open = modal_overlay && modal_overlay.classList.contains('active');
     if (e.key === 'Escape') {
-      document.getElementById('modal-overlay').classList.remove('active');
+      close_modal();
+      return;
+    }
+    if (e.key === 'Tab' && modal_open) {
+      trap_modal_focus(e);
       return;
     }
     if (ai_playing) return;
@@ -315,21 +353,51 @@ const Game = (() => {
     const modal_overlay = document.getElementById('modal-overlay');
     const modal_close_btn = document.getElementById('modal-close');
 
-    info_btn.addEventListener('click', () => modal_overlay.classList.add('active'));
-    modal_close_btn.addEventListener('click', () => modal_overlay.classList.remove('active'));
+    info_btn.addEventListener('click', () => {
+      last_focused_el = document.activeElement || info_btn;
+      modal_overlay.classList.add('active');
+      modal_overlay.setAttribute('aria-hidden', 'false');
+      if (modal_close_btn && typeof modal_close_btn.focus === 'function') {
+        modal_close_btn.focus();
+      }
+    });
+    modal_close_btn.addEventListener('click', close_modal);
     modal_overlay.addEventListener('click', e => {
-      if (e.target === modal_overlay) modal_overlay.classList.remove('active');
+      if (e.target === modal_overlay) close_modal();
     });
 
-    const tab_btns = document.querySelectorAll('.modal-tab');
-    tab_btns.forEach(btn => {
-      btn.addEventListener('click', () => {
-        tab_btns.forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.modal-tab-content').forEach(c => c.classList.remove('active'));
-        btn.classList.add('active');
-        const tab_id = 'tab-' + btn.getAttribute('data-tab');
-        const target = document.getElementById(tab_id);
-        if (target) target.classList.add('active');
+    const tab_btns = Array.from(document.querySelectorAll('.modal-tab'));
+    function activate_tab(btn) {
+      tab_btns.forEach(b => {
+        const selected = b === btn;
+        b.classList.toggle('active', selected);
+        b.setAttribute('aria-selected', selected ? 'true' : 'false');
+        b.setAttribute('tabindex', selected ? '0' : '-1');
+      });
+      document.querySelectorAll('.modal-tab-content').forEach(c => {
+        c.classList.remove('active');
+        c.setAttribute('aria-hidden', 'true');
+      });
+      const tab_id = 'tab-' + btn.getAttribute('data-tab');
+      const target = document.getElementById(tab_id);
+      if (target) {
+        target.classList.add('active');
+        target.setAttribute('aria-hidden', 'false');
+      }
+    }
+
+    tab_btns.forEach((btn, idx) => {
+      btn.addEventListener('click', () => activate_tab(btn));
+      btn.addEventListener('keydown', e => {
+        if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+          e.preventDefault();
+          const step = e.key === 'ArrowRight' ? 1 : -1;
+          const next_btn = tab_btns[(idx + step + tab_btns.length) % tab_btns.length];
+          if (next_btn) {
+            activate_tab(next_btn);
+            if (typeof next_btn.focus === 'function') next_btn.focus();
+          }
+        }
       });
     });
 

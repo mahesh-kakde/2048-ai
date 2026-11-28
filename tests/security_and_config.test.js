@@ -49,3 +49,37 @@ test('vercel.json enforces hashed wasm immutability and strict CSP without unsaf
     assert.equal(/\son[a-z]+\s*=/i.test(content), false);
   }
 });
+
+test('accessibility markup, reduced motion, reflow overflow, and wcag aa contrast hold', () => {
+  const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  assert.match(html, /id="modal-overlay"[^>]*role="dialog"[^>]*aria-modal="true"/);
+  assert.match(html, /class="modal-tabs"[^>]*role="tablist"/);
+  assert.match(html, /role="tab"[^>]*aria-selected="true"[^>]*aria-controls="tab-benchmark"/);
+  assert.match(html, /id="tab-benchmark"[^>]*role="tabpanel"[^>]*aria-labelledby="tab-btn-benchmark"/);
+
+  const css = fs.readFileSync(path.join(ROOT, 'style.css'), 'utf8');
+  assert.match(css, /@media\s*\(prefers-reduced-motion:\s*reduce\)/);
+  assert.equal(/html,\s*body\s*\{[^}]*overflow:\s*hidden/.test(css), false);
+  assert.match(css, /html,\s*body\s*\{[^}]*overflow-y:\s*auto/);
+
+  const lum = (hex) => {
+    const n = parseInt(hex.slice(1), 16);
+    const c = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map(v => {
+      v /= 255;
+      return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    });
+    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+  };
+  const cr = (a, b) => (Math.max(lum(a), lum(b)) + 0.05) / (Math.min(lum(a), lum(b)) + 0.05);
+  const varMap = Object.fromEntries([...css.matchAll(/(--[a-z0-9-]+):\s*(#[0-9a-fA-F]{6})/g)].map(m => [m[1], m[2]]));
+
+  assert.ok(cr(varMap['--text'], varMap['--bg']) >= 4.5, '--text contrast on --bg < 4.5');
+  assert.ok(cr(varMap['--text-light'], varMap['--bg']) >= 4.5, '--text-light contrast on --bg < 4.5');
+  for (const v of [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048]) {
+    assert.ok(cr(varMap['--tile-text-dark'], varMap[`--tile-${v}`]) >= 4.5, `tile-${v} contrast < 4.5`);
+  }
+  assert.ok(cr('#ffffff', '#655c54') >= 4.5, 'primary/hud button contrast < 4.5');
+  assert.ok(cr('#4e463f', '#e8e1d7') >= 4.5, 'hud invalid card contrast < 4.5');
+  assert.ok(cr('#ffffff', '#7f1d1d') >= 4.5, 'hud danger card contrast < 4.5');
+  assert.ok(cr('#756a60', varMap['--bg']) >= 4.5, '404 hero number contrast < 4.5');
+});

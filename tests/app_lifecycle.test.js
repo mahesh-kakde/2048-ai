@@ -152,3 +152,46 @@ test('runtime telemetry tracks errors, wasm fallback, degraded storage, and dism
   assert.equal(rep2.events.length, 50);
   assert.ok(rep2.events.some(e => e.type === 'ai_step_error'));
 });
+
+test('info modal manages aria state, tablist keyboard switching, focus trap, and focus restoration', () => {
+  const { dom } = loadFullApp();
+  const infoBtn = dom.getEl('info-btn');
+  const closeBtn = dom.getEl('modal-close');
+  const overlay = dom.getEl('modal-overlay');
+  const tab1 = dom.getEl('tab-btn-benchmark');
+  const tab2 = dom.getEl('tab-btn-technical');
+  const panel1 = dom.getEl('tab-benchmark');
+  const panel2 = dom.getEl('tab-technical');
+
+  dom.document.activeElement = infoBtn;
+  dom.listeners['info-btn:click']();
+  assert.equal(overlay.classList.contains('active'), true);
+  assert.equal(overlay.getAttribute('aria-hidden'), 'false');
+  assert.equal(dom.document.activeElement, closeBtn);
+
+  // switch tabs via ArrowRight key on tablist button
+  dom.listeners['tab-btn-benchmark:keydown']({ key: 'ArrowRight', preventDefault() {} });
+  assert.equal(tab1.getAttribute('aria-selected'), 'false');
+  assert.equal(tab2.getAttribute('aria-selected'), 'true');
+  assert.equal(panel1.getAttribute('aria-hidden'), 'true');
+  assert.equal(panel2.getAttribute('aria-hidden'), 'false');
+  assert.equal(dom.document.activeElement, tab2);
+
+  // wrap Tab forward from last focusable modal control back to first (#modal-close)
+  let prevented = false;
+  dom.listeners['doc:keydown']({ key: 'Tab', shiftKey: false, preventDefault() { prevented = true; } });
+  assert.equal(prevented, true);
+  assert.equal(dom.document.activeElement, closeBtn);
+
+  // wrap Shift+Tab backward from first control to last (#tab-btn-technical)
+  prevented = false;
+  dom.listeners['doc:keydown']({ key: 'Tab', shiftKey: true, preventDefault() { prevented = true; } });
+  assert.equal(prevented, true);
+  assert.equal(dom.document.activeElement, tab2);
+
+  // Escape closes modal and restores focus back to #info-btn
+  dom.listeners['doc:keydown']({ key: 'Escape', preventDefault() {} });
+  assert.equal(overlay.classList.contains('active'), false);
+  assert.equal(overlay.getAttribute('aria-hidden'), 'true');
+  assert.equal(dom.document.activeElement, infoBtn);
+});
