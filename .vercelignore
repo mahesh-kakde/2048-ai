@@ -1,0 +1,23 @@
+# non-runtime repository files excluded from deployments
+.github/
+.vscode/
+.idea/
+dist/
+notebooks/
+tests/
+v2/
+v3/
+v4/
+wasm/engine.c
+AGENTS.md
+BLUEPRINT.pdf
+LICENSE
+PLAN.html
+README.md
+RESULTS.md
+blueprint_text.txt
+*.npz
+*.npy
+*.keras
+*.h5
+*_output.zip

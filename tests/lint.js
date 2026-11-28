@@ -18,6 +18,7 @@ function listFiles(dir, exts) {
 
 const jsFiles = [
   ...listFiles(path.join(ROOT, 'js'), ['.js']),
+  ...listFiles(path.join(ROOT, 'scripts'), ['.js']),
   ...listFiles(path.join(ROOT, 'tests'), ['.js', '.mjs'])
 ];
 

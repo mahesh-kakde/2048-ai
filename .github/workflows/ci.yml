@@ -41,6 +41,9 @@ jobs:
       - name: lint and static checks
         run: npm run lint
 
+      - name: build runtime dist output
+        run: npm run build
+
       - name: run unit, parity, and security tests
         run: npm test
 

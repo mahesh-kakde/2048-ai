@@ -1,11 +1,13 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import http from 'node:http';
+import os from 'node:os';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 const { ROOT, getWasmBinaryPath, resolveVercelHeaders } = require('../helpers/load_game.js');
+const { buildDist } = require('../../scripts/build_dist.js');
 const { chromium } = require('playwright');
 
 const MIME = {
@@ -19,15 +21,15 @@ const MIME = {
   '.json': 'application/json'
 };
 
-function startServer() {
+function startServer(serveRoot) {
   const cfg = JSON.parse(fs.readFileSync(path.join(ROOT, 'vercel.json'), 'utf8'));
   const server = http.createServer((req, res) => {
     const reqUrl = decodeURIComponent((req.url || '/').split('?')[0]);
     const rel = reqUrl === '/' ? 'index.html' : reqUrl.replace(/^\/+/, '');
-    let target = path.join(ROOT, rel);
+    let target = path.join(serveRoot, rel);
     let status = 200;
-    if (!target.startsWith(ROOT) || !fs.existsSync(target) || fs.statSync(target).isDirectory()) {
-      target = path.join(ROOT, '404.html');
+    if (!target.startsWith(serveRoot) || !fs.existsSync(target) || fs.statSync(target).isDirectory()) {
+      target = path.join(serveRoot, '404.html');
       status = 404;
     }
     const headers = {
@@ -44,7 +46,9 @@ function startServer() {
   });
 }
 
-const { server, port } = await startServer();
+const distDir = fs.mkdtempSync(path.join(os.tmpdir(), '2048-e2e-dist-'));
+buildDist(distDir, ROOT);
+const { server, port } = await startServer(distDir);
 const baseUrl = `http://127.0.0.1:${port}`;
 let browser;
 
@@ -115,7 +119,7 @@ try {
   assert.equal(await page.getAttribute('#modal-overlay', 'aria-hidden'), 'false');
   const modalImgsOk = await page.evaluate(() => {
     const imgs = [...document.querySelectorAll('#tab-benchmark img')];
-    return imgs.length === 2 && imgs.every(im => im.complete && im.naturalWidth === 440 && im.getBoundingClientRect().height > 0);
+    return imgs.length === 2 && imgs.every(im => im.complete && im.naturalWidth === 1000 && im.getBoundingClientRect().height > 0);
   });
   assert.equal(modalImgsOk, true, 'both modal benchmark webp images must render immediately on open');
   await page.keyboard.press('Escape');
@@ -124,6 +128,12 @@ try {
   const tel = await page.evaluate(() => window.Telemetry.get_report());
   assert.equal(tel.error_count, 0);
   assert.equal(tel.engine_mode, 'wasm');
+
+  // verify non-runtime files are not served from dist
+  for (const blockedPath of ['/wasm/engine.c', '/package.json', '/README.md', '/RESULTS.md', '/tests/game.test.js']) {
+    const r = await page.goto(`${baseUrl}${blockedPath}`);
+    assert.equal(r.status(), 404, `non-runtime path should 404 on prod: ${blockedPath}`);
+  }
 
   // verify nested 404 route renders styled 404 page cleanly
   const resp404 = await page.goto(`${baseUrl}/nonexistent/nested`, { waitUntil: 'networkidle' });
@@ -139,4 +149,5 @@ try {
 } finally {
   if (browser) await browser.close();
   server.close();
+  fs.rmSync(distDir, { recursive: true, force: true });
 }

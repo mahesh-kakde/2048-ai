@@ -4,6 +4,7 @@
   "version": "4.0.2",
   "description": "browser-based 2048 game with webassembly expectimax ai",
   "scripts": {
+    "build": "node scripts/build_dist.js",
     "lint": "node tests/lint.js",
     "test": "node --test tests/*.test.js",
     "test:e2e": "node tests/e2e/smoke.mjs"

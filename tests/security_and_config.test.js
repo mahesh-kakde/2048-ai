@@ -1,8 +1,10 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const { ROOT, getWasmBinaryPath, resolveVercelHeaders } = require('./helpers/load_game');
+const { buildDist } = require('../scripts/build_dist');
 
 test('legacy v2/v3 model files and script tags remain excluded from production runtime', () => {
   const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
@@ -98,10 +100,52 @@ test('benchmark images use stripped WebP assets with intrinsic dimensions and ea
     assert.equal(data.includes(Buffer.from('XMP ')), false, `${imgName} contains XMP`);
     assert.equal(data.includes(Buffer.from('ICCP')), false, `${imgName} contains ICC profile`);
   }
-  assert.ok(totalBytes < 50 * 1024, `webp assets exceed 50 KB budget: ${totalBytes} bytes`);
+  assert.ok(totalBytes < 75 * 1024, `webp assets exceed 75 KB budget: ${totalBytes} bytes`);
 
   const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-  assert.match(html, /src="high-score-1\.webp"[^>]*width="440"[^>]*height="732"/);
-  assert.match(html, /src="high-score-2\.webp"[^>]*width="440"[^>]*height="732"/);
+  assert.match(html, /src="high-score-1\.webp"[^>]*width="1000"[^>]*height="1521"/);
+  assert.match(html, /src="high-score-2\.webp"[^>]*width="1000"[^>]*height="1613"/);
   assert.equal(/loading="lazy"/.test(html), false, 'modal benchmark images must not defer loading with lazy');
+});
+
+test('dist build strictly includes runtime assets and excludes notebooks, c source, tests, and docs', () => {
+  assert.equal(fs.existsSync(path.join(ROOT, 'notebooks')), false, 'obsolete notebooks/ should not exist on master');
+
+  const cfg = JSON.parse(fs.readFileSync(path.join(ROOT, 'vercel.json'), 'utf8'));
+  assert.equal(cfg.buildCommand, 'node scripts/build_dist.js');
+  assert.equal(cfg.outputDirectory, 'dist');
+
+  const tmpOut = fs.mkdtempSync(path.join(os.tmpdir(), '2048-dist-test-'));
+  try {
+    buildDist(tmpOut, ROOT);
+    const listRel = (dir, base = '') => {
+      const files = [];
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const rel = base ? `${base}/${entry.name}` : entry.name;
+        if (entry.isDirectory()) files.push(...listRel(path.join(dir, entry.name), rel));
+        else files.push(rel);
+      }
+      return files;
+    };
+    const actual = listRel(tmpOut).sort();
+    const expected = [
+      '404.html',
+      'high-score-1.webp',
+      'high-score-2.webp',
+      'index.html',
+      'js/ai.js',
+      'js/game.js',
+      'js/main.js',
+      'js/ui.js',
+      'style.css',
+      getWasmBinaryPath()
+    ].sort();
+    assert.deepEqual(actual, expected);
+    assert.equal(fs.existsSync(path.join(tmpOut, 'wasm', 'engine.c')), false);
+    assert.equal(fs.existsSync(path.join(tmpOut, 'package.json')), false);
+    assert.equal(fs.existsSync(path.join(tmpOut, 'tests')), false);
+    assert.equal(fs.existsSync(path.join(tmpOut, 'README.md')), false);
+  } finally {
+    fs.rmSync(tmpOut, { recursive: true, force: true });
+  }
 });

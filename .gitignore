@@ -22,6 +22,7 @@ Desktop.ini
 # node
 node_modules/
 package-lock.json
+dist/
 
 # python / kaggle artifacts
 __pycache__/
