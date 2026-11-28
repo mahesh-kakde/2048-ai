@@ -178,6 +178,11 @@ const Game = (() => {
 
   let last_focused_el = null;
 
+  function is_modal_open() {
+    const modal_overlay = document.getElementById('modal-overlay');
+    return Boolean(modal_overlay && modal_overlay.classList.contains('active'));
+  }
+
   function close_modal() {
     const modal_overlay = document.getElementById('modal-overlay');
     if (!modal_overlay || !modal_overlay.classList.contains('active')) return;
@@ -209,8 +214,7 @@ const Game = (() => {
   }
 
   function handle_key(e) {
-    const modal_overlay = document.getElementById('modal-overlay');
-    const modal_open = modal_overlay && modal_overlay.classList.contains('active');
+    const modal_open = is_modal_open();
     if (e.key === 'Escape') {
       close_modal();
       return;
@@ -219,7 +223,7 @@ const Game = (() => {
       trap_modal_focus(e);
       return;
     }
-    if (ai_playing) return;
+    if (modal_open || ai_playing) return;
     const map = { ArrowUp: 0, ArrowRight: 1, ArrowDown: 2, ArrowLeft: 3 };
     if (map[e.key] !== undefined) {
       e.preventDefault();
@@ -230,16 +234,29 @@ const Game = (() => {
   // touch/swipe support
   let touch_start_x = 0;
   let touch_start_y = 0;
+  let touch_active = false;
 
   function handle_touch_start(e) {
-    if (ai_playing) return;
+    if (ai_playing || is_modal_open() || !e.touches || e.touches.length === 0) {
+      touch_active = false;
+      return;
+    }
     const t = e.touches[0];
     touch_start_x = t.clientX;
     touch_start_y = t.clientY;
+    touch_active = true;
+  }
+
+  function handle_touch_cancel() {
+    touch_active = false;
   }
 
   function handle_touch_end(e) {
-    if (ai_playing) return;
+    if (!touch_active || ai_playing || is_modal_open() || !e.changedTouches || e.changedTouches.length === 0) {
+      touch_active = false;
+      return;
+    }
+    touch_active = false;
     const t = e.changedTouches[0];
     const dx = t.clientX - touch_start_x;
     const dy = t.clientY - touch_start_y;
@@ -341,8 +358,13 @@ const Game = (() => {
 
   function init() {
     document.addEventListener('keydown', handle_key);
-    document.addEventListener('touchstart', handle_touch_start, { passive: true });
-    document.addEventListener('touchend', handle_touch_end, { passive: true });
+    const board_el = document.getElementById('board');
+    const touch_target = (board_el && board_el.parentElement) || board_el;
+    if (touch_target) {
+      touch_target.addEventListener('touchstart', handle_touch_start, { passive: true });
+      touch_target.addEventListener('touchend', handle_touch_end, { passive: true });
+      touch_target.addEventListener('touchcancel', handle_touch_cancel, { passive: true });
+    }
 
     new_game_btn.addEventListener('click', new_game);
     retry_btn.addEventListener('click', new_game);

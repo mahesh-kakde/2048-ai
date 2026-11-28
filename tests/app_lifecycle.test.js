@@ -195,3 +195,34 @@ test('info modal manages aria state, tablist keyboard switching, focus trap, and
   assert.equal(overlay.getAttribute('aria-hidden'), 'true');
   assert.equal(dom.document.activeElement, infoBtn);
 });
+
+test('modal open blocks arrow keys and board-scoped swipes from mutating game state', () => {
+  const timers = createFakeTimers();
+  const { ctx, dom } = loadFullApp({ timersImpl: timers });
+  const before = JSON.stringify(ctx.Game.get_board());
+
+  assert.equal(dom.listeners['doc:touchstart'], undefined);
+  assert.equal(typeof dom.listeners['board-wrapper:touchstart'], 'function');
+  assert.equal(typeof dom.listeners['board-wrapper:touchend'], 'function');
+  assert.equal(typeof dom.listeners['board-wrapper:touchcancel'], 'function');
+
+  dom.listeners['info-btn:click']();
+  for (const key of ['ArrowUp', 'ArrowRight', 'ArrowDown', 'ArrowLeft']) {
+    let prevented = false;
+    dom.listeners['doc:keydown']({ key, preventDefault() { prevented = true; } });
+    assert.equal(prevented, false);
+  }
+  assert.equal(JSON.stringify(ctx.Game.get_board()), before);
+
+  dom.listeners['board-wrapper:touchstart']({ touches: [{ clientX: 200, clientY: 200 }] });
+  dom.listeners['board-wrapper:touchend']({ changedTouches: [{ clientX: 50, clientY: 200 }] });
+  assert.equal(JSON.stringify(ctx.Game.get_board()), before);
+  assert.equal(ctx.window.Telemetry.get_report().moves_human, 0);
+
+  // orphan touchend or cancelled swipe when modal closes should not move board
+  dom.listeners['doc:keydown']({ key: 'Escape', preventDefault() {} });
+  dom.listeners['board-wrapper:touchstart']({ touches: [{ clientX: 200, clientY: 200 }] });
+  dom.listeners['board-wrapper:touchcancel']();
+  dom.listeners['board-wrapper:touchend']({ changedTouches: [{ clientX: 50, clientY: 200 }] });
+  assert.equal(ctx.window.Telemetry.get_report().moves_human, 0);
+});

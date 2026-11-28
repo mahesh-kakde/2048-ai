@@ -70,6 +70,8 @@ test('accessibility markup, reduced motion, reflow overflow, and wcag aa contras
   assert.match(css, /@media\s*\(prefers-reduced-motion:\s*reduce\)/);
   assert.equal(/html,\s*body\s*\{[^}]*overflow:\s*hidden/.test(css), false);
   assert.match(css, /html,\s*body\s*\{[^}]*overflow-y:\s*auto/);
+  assert.match(css, /\.board-wrapper\s*\{[^}]*touch-action:\s*none/);
+  assert.match(css, /\.board\s*\{[^}]*touch-action:\s*none/);
 
   const lum = (hex) => {
     const n = parseInt(hex.slice(1), 16);

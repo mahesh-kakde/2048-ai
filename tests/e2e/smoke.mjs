@@ -119,9 +119,14 @@ try {
   assert.equal(await page.textContent('#score'), '0');
   assert.equal(await page.textContent('#ai-btn'), 'let ai play');
 
-  // verify aria modal dialog, eager image visibility, focus restoration, and zero runtime telemetry errors
+  // verify aria modal dialog, eager image visibility, key isolation, touch-action, focus restoration, and zero telemetry errors
+  assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector('.board-wrapper')).touchAction), 'none');
+  const preModalMoves = await page.evaluate(() => window.Telemetry.get_report().moves_human);
   await page.click('#info-btn');
   assert.equal(await page.getAttribute('#modal-overlay', 'aria-hidden'), 'false');
+  await page.keyboard.press('ArrowLeft');
+  await page.keyboard.press('ArrowDown');
+  assert.equal(await page.evaluate(() => window.Telemetry.get_report().moves_human), preModalMoves);
   const modalImgsOk = await page.evaluate(() => {
     const imgs = [...document.querySelectorAll('#tab-benchmark img')];
     return imgs.length === 2 && imgs.every(im => im.complete && im.naturalWidth === 1080 && im.getBoundingClientRect().height > 0);
