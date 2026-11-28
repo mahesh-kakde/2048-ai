@@ -124,7 +124,7 @@ try {
   assert.equal(await page.getAttribute('#modal-overlay', 'aria-hidden'), 'false');
   const modalImgsOk = await page.evaluate(() => {
     const imgs = [...document.querySelectorAll('#tab-benchmark img')];
-    return imgs.length === 2 && imgs.every(im => im.complete && im.naturalWidth === 1000 && im.getBoundingClientRect().height > 0);
+    return imgs.length === 2 && imgs.every(im => im.complete && im.naturalWidth === 1080 && im.getBoundingClientRect().height > 0);
   });
   assert.equal(modalImgsOk, true, 'both modal benchmark webp images must render immediately on open');
   await page.keyboard.press('Escape');

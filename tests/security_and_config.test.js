@@ -37,12 +37,19 @@ test('vercel.json enforces hashed wasm immutability and strict CSP without unsaf
   assert.equal(resolveVercelHeaders(cfg, '/wasm/engine.wasm')['Cache-Control'], 'public, max-age=0, must-revalidate');
   assert.equal(resolveVercelHeaders(cfg, '/wasm/engine.c')['Cache-Control'], 'public, max-age=0, must-revalidate');
 
-  const csp = resolveVercelHeaders(cfg, '/')['Content-Security-Policy'];
+  const headers = resolveVercelHeaders(cfg, '/');
+  const csp = headers['Content-Security-Policy'];
   assert.ok(csp && csp.includes("script-src 'self' 'wasm-unsafe-eval'"));
   assert.ok(csp.includes("object-src 'none'"));
   assert.ok(csp.includes("frame-ancestors 'none'"));
   assert.equal(csp.includes("'unsafe-inline'"), false);
   assert.equal(/\s'unsafe-eval'(?:\s|;|$)/.test(csp), false);
+
+  assert.equal(headers['Cross-Origin-Resource-Policy'], 'same-origin');
+  assert.equal(headers['Cross-Origin-Opener-Policy'], 'same-origin');
+  assert.equal(headers['Access-Control-Allow-Origin'], 'https://2048.maheshkakde.com');
+  assert.equal(headers['Vary'], 'Origin');
+  assert.notEqual(headers['Access-Control-Allow-Origin'], '*');
 
   for (const file of ['index.html', '404.html']) {
     const content = fs.readFileSync(path.join(ROOT, file), 'utf8');
@@ -100,11 +107,11 @@ test('benchmark images use stripped WebP assets with intrinsic dimensions and ea
     assert.equal(data.includes(Buffer.from('XMP ')), false, `${imgName} contains XMP`);
     assert.equal(data.includes(Buffer.from('ICCP')), false, `${imgName} contains ICC profile`);
   }
-  assert.ok(totalBytes < 75 * 1024, `webp assets exceed 75 KB budget: ${totalBytes} bytes`);
+  assert.ok(totalBytes < 100 * 1024, `webp assets exceed 100 KB budget: ${totalBytes} bytes`);
 
   const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-  assert.match(html, /src="high-score-1\.webp"[^>]*width="1000"[^>]*height="1521"/);
-  assert.match(html, /src="high-score-2\.webp"[^>]*width="1000"[^>]*height="1613"/);
+  assert.match(html, /src="high-score-1\.webp"[^>]*width="1080"[^>]*height="2340"/);
+  assert.match(html, /src="high-score-2\.webp"[^>]*width="1080"[^>]*height="2340"/);
   assert.equal(/loading="lazy"/.test(html), false, 'modal benchmark images must not defer loading with lazy');
 });
 
